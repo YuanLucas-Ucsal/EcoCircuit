@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoCircuit</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-screen active" id="screen-login-cliente">
+  <div class="auth-left">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+          <path d="M40 16 C28 16 20 26 20 36 C20 50 34 58 40 64 C46 58 60 50 60 36 C60 26 52 16 40 16Z" fill="#5ddb99"/>
+          <path d="M32 38 L38 44 L50 32" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="28" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="28" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+        </svg>
+      </div>
+      <div class="auth-logo-name">Eco<span>Circuit</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-title">Faça seu Login</div>
+      <div class="auth-tabs">
+        <div class="auth-tab" onclick="showScreen('screen-login-empresa')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM5 9h14v2H5V9zm0 4h6v2H5v-2zm8 0h6v2h-6v-2z"/></svg>
+          Empresa
+        </div>
+        <div class="auth-tab active">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Cliente
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email*</label>
+        <input type="email" class="form-input" placeholder="Digite seu email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha*</label>
+        <div class="input-wrap">
+          <input type="password" class="form-input" id="pw-lc" placeholder="Digite sua senha">
+          <button class="eye-btn" onclick="togglePw('pw-lc')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="forgot"><a href="#">Esqueci minha senha!</a></div>
+      <button class="btn-primary" onclick="enterApp()">Entrar</button>
+      <div class="auth-footer">Não é cadastrado? <a onclick="showScreen('screen-cadastro-cliente')">Criar conta</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-screen" id="screen-login-empresa">
+  <div class="auth-left">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+          <path d="M40 16 C28 16 20 26 20 36 C20 50 34 58 40 64 C46 58 60 50 60 36 C60 26 52 16 40 16Z" fill="#5ddb99"/>
+          <path d="M32 38 L38 44 L50 32" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="28" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="28" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+        </svg>
+      </div>
+      <div class="auth-logo-name">Eco<span>Circuit</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-title">Faça seu Login</div>
+      <div class="auth-tabs">
+        <div class="auth-tab active">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM5 9h14v2H5V9zm0 4h6v2H5v-2zm8 0h6v2h-6v-2z"/></svg>
+          Empresa
+        </div>
+        <div class="auth-tab" onclick="showScreen('screen-login-cliente')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Cliente
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">CNPJ*</label>
+        <input type="text" class="form-input" placeholder="Digite seu CNPJ">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha*</label>
+        <div class="input-wrap">
+          <input type="password" class="form-input" id="pw-le" placeholder="Digite sua senha">
+          <button class="eye-btn" onclick="togglePw('pw-le')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="forgot"><a href="#">Esqueci minha senha!</a></div>
+      <button class="btn-primary" onclick="enterApp()">Entrar</button>
+      <div class="auth-footer">Não é cadastrado? <a onclick="showScreen('screen-cadastro-empresa')">Criar conta</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-screen" id="screen-cadastro-cliente">
+  <div class="auth-left">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+          <path d="M40 16 C28 16 20 26 20 36 C20 50 34 58 40 64 C46 58 60 50 60 36 C60 26 52 16 40 16Z" fill="#5ddb99"/>
+          <path d="M32 38 L38 44 L50 32" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="28" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="28" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+        </svg>
+      </div>
+      <div class="auth-logo-name">Eco<span>Circuit</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-title">Cadastre-se agora!</div>
+      <div class="auth-tabs">
+        <div class="auth-tab" onclick="showScreen('screen-cadastro-empresa')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM5 9h14v2H5V9zm0 4h6v2H5v-2zm8 0h6v2h-6v-2z"/></svg>
+          Empresa
+        </div>
+        <div class="auth-tab active">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Cliente
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Nome Completo*</label><input type="text" class="form-input" placeholder="Digite seu nome completo"></div>
+      <div class="form-group"><label class="form-label">Email*</label><input type="email" class="form-input" placeholder="Digite seu email"></div>
+      <div class="form-group"><label class="form-label">CEP*</label><input type="text" class="form-input" placeholder="Digite seu CEP"></div>
+      <div class="form-group"><label class="form-label">Endereço*</label><input type="text" class="form-input" placeholder="Digite seu Endereço"></div>
+      <div class="form-group"><label class="form-label">Senha*</label><div class="input-wrap"><input type="password" class="form-input" id="pw-cc" placeholder="Digite sua senha"><button class="eye-btn" onclick="togglePw('pw-cc')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <div class="form-group"><label class="form-label">Confirme a Senha*</label><div class="input-wrap"><input type="password" class="form-input" id="pw-cc2" placeholder="Digite sua senha"><button class="eye-btn" onclick="togglePw('pw-cc2')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <button class="btn-primary" onclick="enterApp()">Criar Conta</button>
+      <div class="auth-footer">Já é cadastrado? <a onclick="showScreen('screen-login-cliente')">Faça seu Login</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="auth-screen" id="screen-cadastro-empresa">
+  <div class="auth-left">
+    <div class="auth-logo-wrap">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="2"/>
+          <path d="M40 16 C28 16 20 26 20 36 C20 50 34 58 40 64 C46 58 60 50 60 36 C60 26 52 16 40 16Z" fill="#5ddb99"/>
+          <path d="M32 38 L38 44 L50 32" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="28" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="24" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="28" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+          <circle cx="52" cy="52" r="4" fill="#22d3ee" opacity=".8"/>
+        </svg>
+      </div>
+      <div class="auth-logo-name">Eco<span>Circuit</span></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-title">Cadastre-se agora!</div>
+      <div class="auth-tabs">
+        <div class="auth-tab active">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2zM5 9h14v2H5V9zm0 4h6v2H5v-2zm8 0h6v2h-6v-2z"/></svg>
+          Empresa
+        </div>
+        <div class="auth-tab" onclick="showScreen('screen-cadastro-cliente')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Cliente
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">CNPJ*</label><input type="text" class="form-input" placeholder="Digite seu email"></div>
+      <div class="form-group"><label class="form-label">Email*</label><input type="email" class="form-input" placeholder="Digite seu email"></div>
+      <div class="form-group"><label class="form-label">CEP*</label><input type="text" class="form-input" placeholder="Digite seu CEP"></div>
+      <div class="form-group"><label class="form-label">Endereço*</label><input type="text" class="form-input" placeholder="Digite seu Endereço"></div>
+      <div class="form-group"><label class="form-label">Senha*</label><div class="input-wrap"><input type="password" class="form-input" id="pw-ce" placeholder="Digite sua senha"><button class="eye-btn" onclick="togglePw('pw-ce')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <div class="form-group"><label class="form-label">Confirme a Senha*</label><div class="input-wrap"><input type="password" class="form-input" id="pw-ce2" placeholder="Digite sua senha"><button class="eye-btn" onclick="togglePw('pw-ce2')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+      <button class="btn-primary" onclick="enterApp()">Criar Conta</button>
+      <div class="auth-footer">Já é cadastrado? <a onclick="showScreen('screen-login-empresa')">Faça seu Login</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="app-layout" id="app">
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="#">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 4 C8 4 5 7 5 10 C5 15 9.5 17.5 12 20 C14.5 17.5 19 15 19 10 C19 7 16 4 12 4Z" fill="#5ddb99"/>
+          <path d="M9 11 L11 13 L15 9" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-name">Eco<span>Circuit</span></div>
+    </a>
+
+    <div class="sidebar-section-label">Gerenciar</div>
+
+    <div class="nav-item" onclick="navTo('mapa')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Mapa Interativo
+    </div>
+    <div class="nav-item" onclick="navTo('carteira')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Carteira/Saldo
+    </div>
+    <div class="nav-item" onclick="navTo('historico')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Histórico Coleta
+    </div>
+    <div class="nav-item" onclick="navTo('monitoramento')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Monitoramento
+    </div>
+    <div class="nav-item active" onclick="navTo('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="navTo('cupons')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+      Resgatar Cupons
+    </div>
+    <div class="nav-item" onclick="navTo('detalhes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Detalhes EcoCircuit
+    </div>
+
+    <div class="sidebar-section-label">Preferência</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configuração
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Segurança
+    </div>
+    <div class="nav-item" onclick="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sair
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-row">
+        <div class="user-avatar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(255,255,255,.7)"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        Olá, nome
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <div class="page active" id="page-dashboard">
+      <div class="dash-header">
+        <div class="page-title" style="margin-bottom:0">DashBoard Administrativo</div>
+        <button class="btn-export" onclick="toast('Gerando relatório PDF...')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          Exporta Relatório (PDF)
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <div class="dash-grid" style="margin-top:24px">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="stat-label">Visão Total do Mês</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Total Recolhido (Kg)</div>
+            </div>
+            <div style="text-align:right">
+              <div class="stat-value">1,250 Kg</div>
+              <div class="stat-delta neg">▼ -4.66%</div>
+            </div>
+          </div>
+          <canvas id="lineChart" height="80"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:var(--text)">Engajamento e Recompensa</div>
+              <div style="font-size:13px;color:var(--muted);margin-top:4px">Usuários Ativos</div>
+              <div style="font-size:13px;color:var(--muted)">Novos Cadastros: 22</div>
+              <div style="font-size:14px;font-weight:700;margin-top:10px">Cupons Resgatados</div>
+              <div class="stat-value" style="font-size:36px">125</div>
+            </div>
+            <div style="text-align:right">
+              <div class="stat-value" style="font-size:36px">350</div>
+              <div class="stat-delta pos">▲ 2.56%</div>
+              <canvas id="barChart" height="80" style="margin-top:10px;width:140px"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:20px">Ranking de Categoria</div>
+          <div style="display:flex;align-items:center;gap:28px">
+            <div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">
+                  <span style="width:12px;height:12px;border-radius:3px;background:#22a261;display:inline-block"></span>
+                  Pilhas e Baterias <strong>40%</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">
+                  <span style="width:12px;height:12px;border-radius:3px;background:#5ddb99;display:inline-block"></span>
+                  Celulares <strong>32%</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">
+                  <span style="width:12px;height:12px;border-radius:3px;background:#c8ebd9;display:inline-block"></span>
+                  TVs <strong>28%</strong>
+                </div>
+              </div>
+            </div>
+            <canvas id="donutCanvas" width="130" height="130" style="max-height:130px;max-width:130px;margin-left:auto"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px">Empresas Parceiras</div>
+          <table class="partners-table">
+            <thead>
+              <tr><th>Razão Social</th><th>CNPJ</th><th>Data</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Tech Revive LTDA</td><td style="color:var(--muted);font-size:12px">123.456.789-09</td><td style="color:var(--muted);font-size:12px">01/05/2027</td><td><span class="badge badge-active">Ativa</span></td></tr>
+              <tr><td>Tech Revive LTDA</td><td style="color:var(--muted);font-size:12px">123.456.789-09</td><td style="color:var(--muted);font-size:12px">01/05/2027</td><td><span class="badge badge-active">Ativa</span></td></tr>
+              <tr><td>Tech Revive LTDA</td><td style="color:var(--muted);font-size:12px">123.456.789-09</td><td style="color:var(--muted);font-size:12px">01/05/2027</td><td><span class="badge badge-inactive">Desativa</span></td></tr>
+              <tr><td>Tech Revive LTDA</td><td style="color:var(--muted);font-size:12px">123.456.789-09</td><td style="color:var(--muted);font-size:12px">01/05/2027</td><td><span class="badge badge-inactive">Desativa</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-monitoramento">
+      <div class="page-title">Monitoramento de Contêineres</div>
+      <div class="monitor-grid" id="containers-grid"></div>
+    </div>
+
+    <div class="page" id="page-historico">
+      <div class="page-title">Histórico de Coletas</div>
+      <div class="history-grid" id="history-grid"></div>
+    </div>
+
+    <div class="page" id="page-carteira">
+      <div class="wallet-top">
+        <div class="wallet-hero">
+          <div>
+            <div class="wallet-pts-label">Pontos totalizados:</div>
+            <div class="wallet-pts-value">2750</div>
+          </div>
+          <button class="btn-resgatar" onclick="navTo('cupons')">Resgatar</button>
+        </div>
+        <div class="co2-card">
+          <div class="co2-header">
+            <div class="co2-title">Redução de CO₂</div>
+            <div class="co2-count">2 / 7</div>
+          </div>
+          <div class="co2-icons">
+            <div class="co2-icon filled">🌍</div>
+            <div class="co2-icon filled">🌍</div>
+            <div class="co2-icon">🌍</div>
+            <div class="co2-icon">🌍</div>
+            <div class="co2-icon">🌍</div>
+            <div class="co2-icon">🌍</div>
+            <div class="co2-icon">🌍</div>
+          </div>
+        </div>
+      </div>
+      <div class="page-title" style="font-size:20px">Historico de Resgates</div>
+      <div class="history-grid" id="resgates-grid"></div>
+    </div>
+
+    <div class="page" id="page-mapa">
+      <div class="map-topbar">
+        <button class="map-btn-select">Selecione o Ponto de Coleta</button>
+        <button class="map-btn-loc">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Ferreira Costa – Av. Luis Viana
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button class="map-btn-loc">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Terra Forte Paralela
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <div class="page" id="page-cupons">
+      <div class="page-title">Resgatar Cupons</div>
+      <div class="cupons-grid" id="cupons-grid"></div>
+    </div>
+
+    <div class="page" id="page-detalhes">
+      <div class="details-content">
+        <div class="details-logo-big">
+          <svg viewBox="0 0 80 80" fill="none">
+            <path d="M40 10 C24 10 12 22 12 34 C12 54 30 64 40 74 C50 64 68 54 68 34 C68 22 56 10 40 10Z" fill="#5ddb99"/>
+            <path d="M28 38 L36 46 L54 28" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="details-card">
+          <div class="details-brand-name">Eco<span>Circuit</span></div>
+          <div class="details-address">Ponto de coleta mais procurado: Ferreira Costa, Avenida Vale dos Barris, 125/121 – Barris, Salvador/BA, CEP 40070-055</div>
+          <div class="details-about">O EcoCircuit é um sistema com pontos de coletas especializados no descarte responsável de equipamentos eletrônicos. Aqui você pode entregar dispositivos antigos ou quebrados para que sejam reciclados corretamente. Todos os materiais coletados passam por um processo de separação e reciclagem, garantindo que componentes eletrônicos sejam reaproveitados e substâncias perigosas não contaminem o meio ambiente. Ao descartar seus eletrônicos aqui, você também pode receber pontos no aplicativo EcoCircuit, que podem ser trocados por cupons de desconto em lojas parceiras como recompensas.</div>
+          <div class="details-hours">
+            <p>Horário de funcionamento:</p>
+            <p>• Segunda a Sexta: 8h às 18h</p>
+            <p>• Sábado: 8h às 14h</p>
+            <p>• Domingo e Feriados: Fechado</p>
+          </div>
+          <button class="btn-contact" onclick="toast('Abrindo contato...')">ENTRAR EM CONTATO</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
