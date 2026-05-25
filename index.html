@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoCircuit - Governança Ambiental de E-Waste</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Transições Amortecidas de Interface UI/UX */
+        .view-transition {
+            animation: smoothFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes smoothFadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Pulsação de Alerta Crítico para Contêineres Lotados (100%) */
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); border-color: rgba(239, 68, 68, 1); }
+            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.3); }
+        }
+        .iot-pulse-critical {
+            animation: alertPulse 2s infinite ease-in-out;
+        }
+
+        /* Linha Laser Pulsante do Scanner QR Code */
+        @keyframes laserMove {
+            0%, 100% { top: 0%; opacity: 0.2; }
+            50% { top: 100%; opacity: 1; }
+        }
+        .qr-laser-line { animation: laserMove 2.5s infinite ease-in-out; }
+
+        /* Skeleton Loading Animado por Pulsação */
+        @keyframes skeletonAnimation {
+            0%, 100% { opacity: 0.4; background-color: rgba(156, 163, 175, 0.12); }
+            50% { opacity: 1; background-color: rgba(156, 163, 175, 0.25); }
+        }
+        .skeleton-pulse-block { animation: skeletonAnimation 1.5s infinite ease-in-out; }
+    </style>
+</head>
+<body class="transition-colors duration-500 ease-out antialiased overflow-x-hidden min-h-screen font-sans flex flex-col">
+
+    <div id="root" class="min-h-screen flex flex-col flex-1"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function EcoCircuitApp() {
+            // Estados Globais de Configuração Visual e Autenticação SPA
+            const [theme, setTheme] = useState('light');
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [userRole, setUserRole] = useState('cidadao'); 
+            const [authMode, setAuthMode] = useState('login'); 
+
+            // Estados de Controle de Telas Internas por Fluxo
+            const [cidadaoScreen, setCidadaoScreen] = useState('mapa');
+            const [empresaScreen, setEmpresaScreen] = useState('status');
+            const [adminScreen, setAdminScreen] = useState('bi');
+
+            // Painel de Homologação Suspenso (Ativo por padrão)
+            const [showDevPanel, setShowDevPanel] = useState(true);
+
+            // Estados de Regras de Negócio e Dados Reativos Simulados
+            const [userPoints, setUserPoints] = useState(2750);
+            const [globalLimits, setGlobalLimits] = useState({ min: 500, max: 5000 });
+            const [selectedContainer, setSelectedContainer] = useState(null);
+            const [activeWalletTab, setActiveWalletTab] = useState('catalog');
+            const [showVoucherModal, setShowVoucherModal] = useState(false);
+            const [pendingVoucher, setPendingVoucher] = useState(null);
+            const [rejectionFeedbackId, setRejectionFeedbackId] = useState(null);
+
+            const [myCoupons, setMyCoupons] = useState([
+                { id: 1, name: '10% OFF - Ferreira Costa (Geral)', code: 'EC-7721-XYZ', expiry: '30/06/2026' }
+            ]);
+
+            // Sincronização Automática do Tema no Body
+            useEffect(() => {
+                document.body.className = theme === 'dark' 
+                    ? 'bg-[#0a0c10] text-gray-100' 
+                    : 'bg-[#f1f5f9] text-slate-900';
+            }, [theme]);
+
+            // Função do Inspecionador para Forçar Qualquer Estado de Tela Imediatamente
+            const injectAppState = (role, screenId) => {
+                setUserRole(role);
+                setIsAuthenticated(true);
+                if (role === 'cidadao') setCidadaoScreen(screenId);
+                if (role === 'empresa') setEmpresaScreen(screenId);
+                if (role === 'admin') setAdminScreen(screenId);
+            };
+
+            const runPhotoValidationTimer = () => {
+                setCidadaoScreen('loading');
+                setTimeout(() => {
+                    setUserPoints(prev => prev + 350);
+                    setCidadaoScreen('success');
+                }, 2200);
+            };
+
+            const triggerVoucherRedemptionFlow = (name, cost) => {
+                if (userPoints < cost) {
+                    alert('Margem de pontuação insuficiente para efetuar o resgate deste cupom.');
+                    return;
+                }
+                setPendingVoucher({ name, cost });
+                setShowVoucherModal(true);
+            };
+
+            const confirmVoucherRedemption = () => {
+                setUserPoints(prev => prev - pendingVoucher.cost);
+                setMyCoupons(prev => [...prev, {
+                    id: Date.now(),
+                    name: pendingVoucher.name,
+                    code: `EC-${Math.floor(1000 + Math.random() * 9000)}-WEST`,
+                    expiry: '31/12/2026'
+                }]);
+                setShowVoucherModal(false);
+                setPendingVoucher(null);
+                setCidadaoScreen('carteira');
+                setActiveWalletTab('my-coupons');
+            };
+
+            // Tokens de Estilização de Contraste Absoluto (Fundo Sólido Blindado)
+            const cardClass = theme === 'dark' 
+                ? 'bg-[#151923] border-zinc-800 text-white shadow-[0_20px_40px_rgba(0,0,0,0.5)]' 
+                : 'bg-white border-slate-200 text-slate-900 shadow-[0_15px_35px_rgba(148,163,184,0.1)]';
+
+            const inputClass = theme === 'dark'
+                ? 'bg-[#1c212c] text-white border-zinc-700 focus:border-emerald-500'
+                : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-emerald-500';
+
+            const sidebarClass = theme === 'dark' ? 'bg-[#0f1218] border-r border-zinc-800/40' : 'bg-white border-r border-slate-200/80';
+
+            return (
+                <div className="min-h-screen flex flex-col relative z-10 flex-1">
+                    
+                    {/* 🎨 PLANO DE FUNDO: FORMAS GEOMÉTRICAS ORGÂNICAS ARREDONDADAS AMIGÁVEIS */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                        <div className="absolute top-[-10%] left-[-8%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-400/5 blur-3xl"></div>
+                        <div className="absolute bottom-[-12%] right-[-5%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-tr from-emerald-500/10 to-emerald-300/5 blur-3xl"></div>
+                    </div>
+
+                    {/* 🏢 COMPONENTIZAÇÃO DO TOPO FIXADO EM BLOCO NATURAL CONTROLANDO AS MARGENS */}
+                    <div className="sticky top-0 z-50 w-full flex flex-col">
+                        {/* BARRA SUPERIOR E LOGOTIPO */}
+                        <header className="w-full h-16 bg-[#0f1217] text-white flex items-center justify-between px-6 shadow-xl border-b border-zinc-800/80">
+                            <div className="flex items-center gap-3 font-bold text-lg cursor-pointer" onClick={() => setIsAuthenticated(false)}>
+                                <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/30">
+                                    <i className="fa-solid fa-leaf text-emerald-400 text-sm"></i>
+                                </div>
+                                <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent tracking-tight">EcoCircuit</span>
+                            </div>
+
+                            {/* Botão Interativo do Painel de Homologação */}
+                            <button 
+                                onClick={() => setShowDevPanel(prev => !prev)}
+                                className="bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-400 flex items-center gap-2 border border-zinc-700/60 transition-all cursor-pointer mercantile active:scale-95"
+                            >
+                                <i className="fa-solid fa-circle-nodes"></i>
+                                <span>{showDevPanel ? 'Ocultar Inspecionador' : ' 🔬 Painel de Controle (Ver Telas)'}</span>
+                            </button>
+
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-zinc-800/80 hover:bg-zinc-700 text-emerald-400 cursor-pointer transition-all active:scale-90"
+                                >
+                                    <i className={`fa-solid ${theme === 'light' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-400'}`}></i>
+                                </button>
+                            </div>
+                        </header>
+
+                        {/* INSPECIONADOR DE ESTADOS / GATILHO COMPLETO DE TELAS DA SPA */}
+                        {showDevPanel && (
+                            <div className="w-full bg-[#0b0d12] text-white border-b border-zinc-800/80 p-4 shadow-2xl overflow-x-auto">
+                                <div className="max-w-6xl mx-auto flex flex-col gap-3 lg:flex-row lg:items-center justify-between">
+                                    <div className="text-xs">
+                                        <span className="text-emerald-400 font-black uppercase tracking-wider text-[10px] block">Inspecionador de Interfaces</span>
+                                        <p className="text-zinc-400">Clique para injetar estados específicos instantaneamente:</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <div className="bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 flex gap-1 items-center">
+                                            <span className="text-[9px] font-bold text-emerald-400 px-1 uppercase">Cidadão:</span>
+                                            <button onClick={() => injectAppState('cidadao', 'mapa')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold transition-all">Mapa</button>
+                                            <button onClick={() => injectAppState('cidadao', 'qr')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold transition-all">QR</button>
+                                            <button onClick={() => injectAppState('cidadao', 'category')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold transition-all">Categorias</button>
+                                            <button onClick={() => injectAppState('cidadao', 'photo')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold transition-all">Foto</button>
+                                            <button onClick={() => injectAppState('cidadao', 'loading')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold text-amber-400">Skeleton</button>
+                                            <button onClick={() => injectAppState('cidadao', 'success')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold text-emerald-400">Sucesso</button>
+                                            <button onClick={() => injectAppState('cidadao', 'carteira')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Carteira</button>
+                                        </div>
+                                        <div className="bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 flex gap-1 items-center">
+                                            <span className="text-[9px] font-bold text-blue-400 px-1 uppercase">Empresa:</span>
+                                            <button onClick={() => injectAppState('empresa', 'status')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold text-amber-400">Pendente</button>
+                                            <button onClick={() => injectAppState('empresa', 'campaign')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Nova Oferta</button>
+                                            <button onClick={() => injectAppState('empresa', 'history')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Resgates</button>
+                                        </div>
+                                        <div className="bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 flex gap-1 items-center">
+                                            <span className="text-[9px] font-bold text-purple-400 px-1 uppercase">Admin:</span>
+                                            <button onClick={() => injectAppState('admin', 'bi')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">BI Dashboard</button>
+                                            <button onClick={() => injectAppState('admin', 'iot')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold text-red-400">IoT Monitor</button>
+                                            <button onClick={() => injectAppState('admin', 'partners')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Fila Aprovação</button>
+                                            <button onClick={() => injectAppState('admin', 'config')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Limites</button>
+                                            <button onClick={() => injectAppState('admin', 'citizens')} className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded font-semibold">Cidadãos</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* CORPO DA SPA (Layout fluido sem paddings fixos conflituosos para alinhar organicamente) */}
+                    <div className="flex-1 flex flex-col relative z-10">
+                        <div className="flex-1 flex flex-col md:flex-row">
+                            
+                            {/* TELA DE LOGIN / CADASTRO INTEGRADA SPLIT */}
+                            {!isAuthenticated && (
+                                <div className="p-6 flex flex-col items-center justify-center min-h-full flex-1 view-transition">
+                                    <div className={`w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-3xl overflow-hidden border shadow-2xl ${theme === 'dark' ? 'bg-[#11141c] border-zinc-800' : 'bg-white border-slate-200'}`}>
+                                        
+                                        {/* Painel Esquerdo: Identidade Decorativa */}
+                                        <div className="relative bg-gradient-to-br from-emerald-600 to-teal-800 p-8 text-white flex flex-col justify-between overflow-hidden min-h-[380px]">
+                                            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                                            <div className="absolute bottom-[-10%] left-[-10%] w-44 h-44 rounded-full bg-white/10 blur-xl"></div>
+                                            <div className="absolute top-[-5%] right-[-5%] w-36 h-36 rounded-3xl bg-emerald-400/20 rotate-12 blur-md"></div>
+                                            
+                                            <div className="flex items-center gap-2 font-bold text-base relative z-10">
+                                                <i className="fa-solid fa-leaf text-white text-lg"></i>
+                                                <span>EcoCircuit</span>
+                                            </div>
+                                            
+                                            <div className="space-y-2 relative z-10">
+                                                <h2 className="text-3xl font-black tracking-tight leading-tight">Faça o Login em nossa Plataforma</h2>
+                                                <p className="text-xs text-emerald-100/80 leading-relaxed">Conectando cidadãos a locais estratégicos de coleta de materiais eletrônicos de forma ágil, segura e gamificada.</p>
+                                            </div>
+                                            <p className="text-[10px] text-emerald-200/50 relative z-10">Smart Code Solutions &copy; 2026</p>
+                                        </div>
+
+                                        {/* Painel Direito: Formulário Sólido */}
+                                        <div className="p-8 flex flex-col justify-center space-y-6">
+                                            <div className="space-y-1">
+                                                <h3 className="text-xl font-extrabold tracking-tight">Portal de Acesso Integrado</h3>
+                                                <p className="text-xs text-gray-400">Selecione seu escopo profissional abaixo para carregar os campos correspondentes.</p>
+                                            </div>
+
+                                            {/* Abas de Escolha de Perfil */}
+                                            <div className="grid grid-cols-3 gap-1 bg-zinc-500/10 p-1 rounded-xl border border-zinc-700/5">
+                                                <button onClick={() => { setUserRole('cidadao'); setAuthMode('login'); setCidadaoScreen('mapa'); }} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'cidadao' ? 'bg-emerald-500 text-black shadow' : 'text-gray-400'}`}>Cidadão</button>
+                                                <button onClick={() => { setUserRole('empresa'); setAuthMode('login'); setEmpresaScreen('status'); }} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'empresa' ? 'bg-blue-500 text-white shadow' : 'text-gray-400'}`}>Empresa</button>
+                                                <button onClick={() => { setUserRole('admin'); setAuthMode('login'); setAdminScreen('bi'); }} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'admin' ? 'bg-purple-500 text-white shadow' : 'text-gray-400'}`}>Admin</button>
+                                            </div>
+
+                                            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setIsAuthenticated(true); }}>
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                                        {userRole === 'empresa' ? 'CNPJ Corporativo' : 'Identificador / E-mail'}
+                                                    </label>
+                                                    <div className="relative">
+                                                        <input type="text" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="Insira qualquer credencial para testar" />
+                                                        <i className={`fa-solid ${userRole === 'empresa' ? 'fa-building' : 'fa-envelope'} absolute left-3 top-3.5 text-gray-400 text-xs`}></i>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Senha de Acesso</label>
+                                                    <div className="relative">
+                                                        <input type="password" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
+                                                        <i className="fa-solid fa-lock absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" className="w-full p-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer">
+                                                    Entrar na SPA
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ==========================================================================
+                               📱 2. FLUXO DO CIDADÃO
+                               ========================================================================== */}
+                            {isAuthenticated && userRole === 'cidadao' && (
+                                <div className="flex-1 flex flex-col p-6 md:p-8 max-w-5xl w-full mx-auto space-y-6 view-transition">
+                                    
+                                    {/* Métrica e Perfil */}
+                                    <div className={`p-6 rounded-3xl border flex flex-wrap justify-between items-center gap-4 ${cardClass}`}>
+                                        <div className="space-y-0.5">
+                                            <h2 className="text-xl font-black tracking-tight">Painel de Coleta e Prêmios</h2>
+                                            <p className="text-xs text-gray-400">Gerenciamento reativo de descarte sustentável</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <div className="bg-emerald-500/5 border border-emerald-500/10 px-4 py-2 rounded-2xl text-center shadow-inner">
+                                                <span className="text-[9px] font-bold text-gray-400 block uppercase tracking-wider mb-0.5">Seu Saldo</span>
+                                                <strong className="text-emerald-500 text-xl font-black">{userPoints} pts</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 🧭 BARRA DE NAVEGAÇÃO PREMIUM DO CIDADÃO COM HOVER E FEEDBACK */}
+                                    <nav className={`p-2 rounded-2xl border flex gap-1 items-center overflow-x-auto ${cardClass}`}>
+                                        <button 
+                                            onClick={() => setCidadaoScreen('mapa')} 
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${cidadaoScreen === 'mapa' ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}
+                                        >
+                                            <i className="fa-solid fa-map-location-dot text-sm"></i>
+                                            <span>Mapa de Coleta</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setCidadaoScreen('qr')} 
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${['qr', 'category', 'photo', 'loading', 'success'].includes(cidadaoScreen) ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}
+                                        >
+                                            <i className="fa-solid fa-qrcode text-sm"></i>
+                                            <span>Registrar Descarte</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => setCidadaoScreen('carteira')} 
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${cidadaoScreen === 'carteira' ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}
+                                        >
+                                            <i className="fa-solid fa-wallet text-sm"></i>
+                                            <span>Minha Carteira</span>
+                                        </button>
+                                    </nav>
+
+                                    {/* Sub-telas baseadas no estado da barra */}
+                                    {cidadaoScreen === 'mapa' && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 view-transition">
+                                            <div className="lg:col-span-2 h-80 rounded-3xl relative overflow-hidden bg-slate-900 border border-zinc-800 shadow-inner">
+                                                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#10b981_1.5px,transparent_1.5px)] [background-size:20px_20px]"></div>
+                                                <div onClick={() => setSelectedContainer({ name: 'Shopping Salvador', location: 'Av. Tancredo Neves, Piso L1', volume: 72, blocked: false })} className="absolute top-1/4 left-1/3 text-emerald-400 text-3xl cursor-pointer hover:scale-110 transition-all"><i className="fa-solid fa-location-dot"></i></div>
+                                                <div onClick={() => setSelectedContainer({ name: 'Pituba Supermercado', location: 'Av. Manoel Dias da Silva', volume: 100, blocked: true })} className="absolute top-2/3 left-2/3 text-red-500 text-3xl cursor-pointer hover:scale-110 transition-all animate-pulse"><i className="fa-solid fa-triangle-exclamation"></i></div>
+                                            </div>
+                                            <div>
+                                                {selectedContainer ? (
+                                                    <div className={`p-5 rounded-3xl border space-y-3.5 h-full flex flex-col justify-between ${cardClass}`}>
+                                                        <div>
+                                                            <h4 className="font-extrabold text-base tracking-tight">{selectedContainer.name}</h4>
+                                                            <p className="text-xs text-gray-400 mt-0.5">{selectedContainer.location}</p>
+                                                            <div className="mt-4">
+                                                                <div className="flex justify-between text-xs font-bold mb-1">
+                                                                    <span>Capacidade Volumétrica</span>
+                                                                    <span className={selectedContainer.blocked ? 'text-red-400' : 'text-emerald-400'}>{selectedContainer.volume}%</span>
+                                                                </div>
+                                                                <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                                    <div className={`h-full ${selectedContainer.blocked ? 'bg-red-500' : 'bg-emerald-400'}`} style={{width: `${selectedContainer.volume}%`}}></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {selectedContainer.blocked ? (
+                                                            <div className="p-3 bg-red-500/10 border border-red-500/25 text-red-400 text-xs rounded-xl font-semibold leading-relaxed">
+                                                                Dispositivo travado por segurança. A bacia física de armazenamento atingiu 100%.
+                                                            </div>
+                                                        ) : (
+                                                            <button onClick={() => setCidadaoScreen('qr')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all">Ir para o Bocal</button>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-6 text-center border-2 border-dashed border-zinc-700/30 rounded-3xl text-gray-400 text-xs flex flex-col items-center justify-center h-full gap-2">
+                                                        <i className="fa-solid fa-hand-pointer text-lg text-emerald-500/20"></i>
+                                                        <span>Selecione um ponto de coleta física no mapa para carregar os dados de telemetria.</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'qr' && (
+                                        <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
+                                            <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Leitor de QR Code Contêiner</h3>
+                                            <div className="w-full h-44 bg-zinc-950 rounded-xl relative overflow-hidden flex items-center justify-center border border-zinc-800">
+                                                <div className="absolute w-full h-0.5 bg-emerald-400 left-0 qr-laser-line shadow-[0_0_8px_#10b981]"></div>
+                                                <i className="fa-solid fa-camera text-2xl text-zinc-800"></i>
+                                            </div>
+                                            <input type="text" placeholder="Código Alfanumérico Manual" className={`w-full p-2.5 text-xs text-center rounded-xl outline-none ${inputClass}`} />
+                                            <button onClick={() => setCidadaoScreen('category')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase rounded-xl cursor-pointer active:scale-95 transition-all">Acessar Painel</button>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'category' && (
+                                        <div className="space-y-4 text-center view-transition">
+                                            <h3 className="text-lg font-bold tracking-tight">O que você vai descartar hoje?</h3>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                                {['Pilhas e Baterias', 'Cabos e Fios', 'Celulares', 'Periféricos', 'TVs e Monitores', 'Computadores'].map((cat) => (
+                                                    <div key={cat} onClick={() => setCidadaoScreen('photo')} className={`p-5 text-center rounded-2xl border cursor-pointer transform hover:-translate-y-0.5 transition-all hover:border-emerald-500 flex flex-col items-center justify-center gap-3 ${cardClass}`}>
+                                                        <i className="fa-solid fa-boxes-packing text-emerald-400 text-sm"></i>
+                                                        <span className="text-xs font-bold">{cat}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'photo' && (
+                                        <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
+                                            <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Validação por Imagem</h3>
+                                            <div onClick={runPhotoValidationTimer} className="w-full h-44 border-2 border-dashed border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-zinc-900/5 hover:border-emerald-500 transition-all">
+                                                <i className="fa-solid fa-camera-retro text-xl text-emerald-400"></i>
+                                                {/* CORRIGIDO: class → className */}
+                                                <span className="text-xs text-gray-400 font-bold">Simular Envio de Foto do Objeto</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'loading' && (
+                                        <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
+                                            <h4 className="font-bold text-emerald-400 animate-pulse text-xs uppercase tracking-widest">Aguarde, validando seu descarte junto ao contêiner...</h4>
+                                            <div className="space-y-2.5">
+                                                <div className="h-10 w-full skeleton-pulse-block rounded-xl"></div>
+                                                <div className="h-4 w-3/4 skeleton-pulse-block rounded-xl mx-auto"></div>
+                                                <div className="h-16 w-full skeleton-pulse-block rounded-xl"></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'success' && (
+                                        <div className="max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 border-emerald-500/20 bg-emerald-500/5 shadow-xl view-transition">
+                                            <i className="fa-solid fa-circle-check text-4xl text-emerald-400"></i>
+                                            <h3 className="text-lg font-black tracking-tight">Descarte Aprovado!</h3>
+                                            <div className="py-2.5 bg-zinc-950/20 rounded-xl font-black text-2xl text-emerald-400">+ 350 pontos</div>
+                                            <button onClick={() => setCidadaoScreen('carteira')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase rounded-xl cursor-pointer">Acessar Carteira</button>
+                                        </div>
+                                    )}
+
+                                    {cidadaoScreen === 'carteira' && (
+                                        <div className="space-y-4 view-transition">
+                                            <div className="flex gap-4 border-b border-zinc-800/10 pb-1.5">
+                                                <button onClick={() => setActiveWalletTab('catalog')} className={`pb-1.5 text-xs font-bold transition-all cursor-pointer ${activeWalletTab === 'catalog' ? 'border-b-2 border-emerald-400 text-emerald-400' : 'text-gray-400'}`}>Cupons de Desconto</button>
+                                                <button onClick={() => setActiveWalletTab('my-coupons')} className={`pb-1.5 text-xs font-bold transition-all cursor-pointer ${activeWalletTab === 'my-coupons' ? 'border-b-2 border-emerald-400 text-emerald-400' : 'text-gray-400'}`}>Meus Cupons ({myCoupons.length})</button>
+                                            </div>
+
+                                            {activeWalletTab === 'catalog' ? (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className={`p-4 rounded-2xl border flex justify-between items-center ${cardClass}`}>
+                                                        <div>
+                                                            <h4 className="font-bold text-xs">Cupom 20% OFF - Lojas Parceiras Tech</h4>
+                                                            <p className="text-[11px] text-emerald-400 font-bold mt-0.5">Custo: 1200 pontos</p>
+                                                        </div>
+                                                        <button onClick={() => triggerVoucherRedemptionFlow('20% OFF Lojas Parceiras', 1200)} className="bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold text-xs cursor-pointer active:scale-95 transition-all shadow">Resgatar</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {myCoupons.map(c => (
+                                                        <div key={c.id} className={`p-4 rounded-2xl border border-l-4 border-l-emerald-400 flex justify-between items-center ${cardClass}`}>
+                                                            <div className="space-y-1">
+                                                                <h4 className="font-bold text-xs text-zinc-400">{c.name}</h4>
+                                                                <p className="text-[11px] font-mono text-gray-400">HASH: <span className="bg-zinc-800 text-white px-2 py-0.5 rounded font-bold">{c.code}</span></p>
+                                                                <p className="text-[10px] text-amber-500 font-medium">Expira: {c.expiry}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                </div>
+                            )}
+
+                            {/* ==========================================================================
+                               🏢 3. FLUXO DA EMPRESA PARCEIRA (SIDEBARS VIVAS E COM HOVER PREMIUM)
+                               ========================================================================== */}
+                            {isAuthenticated && userRole === 'empresa' && (
+                                <div className="flex-1 flex view-transition">
+                                    <aside className={`w-64 p-5 space-y-4 border-r ${sidebarClass}`}>
+                                        <h3 className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Painel Corporativo</h3>
+                                        <nav className="space-y-1.5">
+                                            <button 
+                                                onClick={() => setEmpresaScreen('status')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${empresaScreen === 'status' ? 'bg-blue-500/10 text-blue-400 border-blue-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-building-circle-check"></i>
+                                                <span>Status do Perfil</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setEmpresaScreen('campaign')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${empresaScreen === 'campaign' ? 'bg-blue-500/10 text-blue-400 border-blue-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-tags"></i>
+                                                <span>Criar Ofertas</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setEmpresaScreen('history')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${empresaScreen === 'history' ? 'bg-blue-500/10 text-blue-400 border-blue-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-receipt"></i>
+                                                <span>Histórico Resgates</span>
+                                            </button>
+                                        </nav>
+                                    </aside>
+                                    <main className="flex-1 p-8 space-y-5">
+                                        {empresaScreen === 'status' && (
+                                            <div className="p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 space-y-2 shadow-xl page-fade-in">
+                                                <h2 className="text-sm font-bold text-amber-500"><i className="fa-solid fa-hourglass-half mr-1.5"></i>Status Cadastral: PENDENTE DE APROVAÇÃO</h2>
+                                                <p className="text-xs text-gray-400 leading-relaxed">Sua conta corporativa foi submetida com sucesso. Os administradores da Codexa estão avaliando as diretrizes técnicas antes da publicação dos cupons virtuais.</p>
+                                            </div>
+                                        )}
+                                        {empresaScreen === 'campaign' && (
+                                            <div className={`p-6 rounded-3xl border max-w-md space-y-4 page-fade-in ${cardClass}`}>
+                                                <h3 className="font-bold text-base tracking-tight">Criar Oferta de Desconto</h3>
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] uppercase font-bold text-gray-400">Nome da Oferta</label>
+                                                    <input type="text" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder="Ex: 25% OFF em Periféricos" id="emp-t" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="block text-[10px] uppercase font-bold text-gray-400">Valor Exigido em Pontos</label>
+                                                    <input type="number" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder={`Margem autorizada: de ${globalLimits.min} a ${globalLimits.max}`} id="emp-p" />
+                                                </div>
+                                                <button onClick={() => { 
+                                                    const p = parseInt(document.getElementById('emp-p').value); 
+                                                    if(p < globalLimits.min || p > globalLimits.max) { 
+                                                        alert(`Recusa de Regra (RN003): O valor inserido está fora das margens reguladas (${globalLimits.min} a ${globalLimits.max} pts).`); 
+                                                    } else { 
+                                                        alert('Campanha publicada com sucesso!'); 
+                                                    } 
+                                                }} className="w-full py-2.5 bg-blue-500 text-white font-bold text-xs rounded-xl cursor-pointer">Publicar Campanha</button>
+                                            </div>
+                                        )}
+                                        {empresaScreen === 'history' && (
+                                            <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
+                                                <h3 className="font-bold text-sm mb-4">Cupons Utilizados por Clientes</h3>
+                                                <table className="w-full text-xs text-left">
+                                                    <thead>
+                                                        <tr className="border-b border-zinc-700/20 text-gray-400 uppercase text-[10px]">
+                                                            <th className="pb-2">CÓDIGO ÚNICO</th>
+                                                            <th className="pb-2">OFERTA</th>
+                                                            <th className="pb-2">UTILIZAÇÃO</th>
+                                                            <th className="pb-2">STATUS</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr className="border-b border-zinc-700/10">
+                                                            <td className="py-3 font-mono font-bold">EC-8831-ABC</td>
+                                                            <td className="py-3">Cupom 20% OFF Tech</td>
+                                                            <td className="py-3">24/05/2026</td>
+                                                            <td className="py-3 text-emerald-500 font-bold">Consumido</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </main>
+                                </div>
+                            )}
+
+                            {/* ==========================================================================
+                               💻 4. PAINEL DO ADMINISTRADOR (SIDEBARS INTUITIVAS E COM RELEVO HOVER)
+                               ========================================================================== */}
+                            {isAuthenticated && userRole === 'admin' && (
+                                <div className="flex-1 flex view-transition">
+                                    <aside className={`w-64 p-5 space-y-4 border-r ${sidebarClass}`}>
+                                        <div className="space-y-0.5">
+                                            <h3 className="font-bold text-xs uppercase tracking-wider text-gray-400">Codexa Admin</h3>
+                                            <div className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 w-fit">Nível Global</div>
+                                        </div>
+                                        <nav className="space-y-1.5">
+                                            <button 
+                                                onClick={() => setAdminScreen('bi')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${adminScreen === 'bi' ? 'bg-purple-500/10 text-purple-400 border-purple-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-chart-pie"></i>
+                                                <span>Business Intelligence</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setAdminScreen('iot')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${adminScreen === 'iot' ? 'bg-purple-500/10 text-purple-400 border-purple-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-microchip"></i>
+                                                <span>Monitoramento IoT</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setAdminScreen('partners')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${adminScreen === 'partners' ? 'bg-purple-500/10 text-purple-400 border-purple-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-building-shield"></i>
+                                                <span>Fila de Parceiros</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setAdminScreen('config')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${adminScreen === 'config' ? 'bg-purple-500/10 text-purple-400 border-purple-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-sliders"></i>
+                                                <span>Configurar Limites</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setAdminScreen('citizens')} 
+                                                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs flex items-center gap-3 transition-all duration-200 cursor-pointer active:scale-98 border-l-4 ${adminScreen === 'citizens' ? 'bg-purple-500/10 text-purple-400 border-purple-500 shadow-sm' : 'text-gray-400 border-transparent hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:shadow-sm'}`}
+                                            >
+                                                <i className="fa-solid fa-users"></i>
+                                                <span>Lista de Cidadãos</span>
+                                            </button>
+                                        </nav>
+                                    </aside>
+                                    <main className="flex-1 p-8 space-y-5">
+                                        {adminScreen === 'bi' && (
+                                            <div className={`p-6 rounded-3xl border space-y-4 page-fade-in ${cardClass}`}>
+                                                <div className="flex justify-between items-center flex-wrap gap-2">
+                                                    <h3 className="font-extrabold text-base tracking-tight">Massa Total de Resíduos Coletados</h3>
+                                                    <button onClick={() => alert('Exportando relatório corporativo em PDF...')} className="bg-emerald-500 text-black px-4 py-2 rounded-xl text-xs font-bold shadow active:scale-95">Exportar Relatório (PDF)</button>
+                                                </div>
+                                                <div className="h-36 flex items-end justify-around border-b border-zinc-700/20 pb-1">
+                                                    <div className="w-12 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-xl" style={{height: '45%'}} title="450 Kg"></div>
+                                                    <div className="w-12 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-xl" style={{height: '65%'}} title="700 Kg"></div>
+                                                    <div className="w-12 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-xl" style={{height: '95%'}} title="950 Kg"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {adminScreen === 'iot' && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                                <div className={`p-5 rounded-3xl border ${cardClass}`}>
+                                                    <h4 className="font-extrabold text-sm">Contêiner #01 - Shopping Salvador</h4>
+                                                    <div className="w-full h-2 bg-zinc-800 rounded-full mt-3 overflow-hidden"><div className="h-full bg-emerald-500" style={{width: '72%'}}></div></div>
+                                                    <span className="text-[10px] text-gray-400 block mt-1">72% ocupado | Operação Estável</span>
+                                                </div>
+                                                <div className={`p-5 rounded-3xl border iot-pulse-critical ${cardClass}`}>
+                                                    <h4 className="font-extrabold text-sm text-red-400">Contêiner #04 - Pituba Supermercado</h4>
+                                                    <div className="w-full h-2 bg-zinc-800 rounded-full mt-3 overflow-hidden"><div className="h-full bg-red-500" style={{width: '100%'}}></div></div>
+                                                    <span className="text-[10px] text-red-400 font-bold block mt-1">100% preenchido | PORTA BLOQUEADA</span>
+                                                    <button onClick={() => alert('Solicitação de esvaziamento enviada.')} className="w-full mt-3 py-2.5 bg-red-500 text-white font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg">Solicitar Esvaziamento</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {adminScreen === 'partners' && (
+                                            <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
+                                                <h3 className="font-bold text-xs mb-3 uppercase tracking-wider text-zinc-400">Fila de Parcerias Pendentes</h3>
+                                                <table className="w-full text-xs text-left">
+                                                    <thead>
+                                                        <tr className="border-b border-zinc-700/20 text-gray-400 uppercase text-[10px]">
+                                                            <th className="pb-2">EMPRESA</th>
+                                                            <th className="pb-2">CNPJ</th>
+                                                            <th className="pb-2">AÇÕES</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr className="border-b border-zinc-700/10">
+                                                            <td className="py-3 font-bold">Bahia Eletro S.A.</td>
+                                                            <td className="py-3 font-mono">12.345.678/0001-99</td>
+                                                            <td className="py-3 space-x-2">
+                                                                <button onClick={() => alert('Parceria aprovada.')} className="bg-emerald-500 text-black px-3 py-1 rounded text-xs font-bold cursor-pointer">Aprovar</button>
+                                                                <button onClick={() => alert('Rejeitado')} className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold cursor-pointer">Rejeitar</button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                        {adminScreen === 'config' && (
+                                            <div className={`p-6 rounded-3xl border max-w-sm space-y-4 ${cardClass}`}>
+                                                <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-400">Configurações Gerais</h3>
+                                                <div className="space-y-1">
+                                                    <label className="block text-xs font-bold text-gray-400 uppercase">Limite Mínimo (Pontos)</label>
+                                                    <input type="number" value={globalLimits.min} onChange={(e) => setGlobalLimits(prev => ({...prev, min: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="block text-xs font-bold text-gray-400 uppercase">Limite Máximo (Pontos)</label>
+                                                    <input type="number" value={globalLimits.max} onChange={(e) => setGlobalLimits(prev => ({...prev, max: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
+                                                </div>
+                                                <button onClick={() => alert('Limites salvos')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs rounded-xl">Salvar Parâmetros</button>
+                                            </div>
+                                        )}
+                                        {adminScreen === 'citizens' && (
+                                            <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
+                                                <h3 className="font-bold text-sm mb-4">Cidadãos Ativos</h3>
+                                                <table className="w-full text-xs text-left">
+                                                    <thead>
+                                                        <tr className="border-b border-zinc-700/20 text-gray-400 uppercase text-[10px]">
+                                                            <th className="pb-2">NOME</th>
+                                                            <th className="pb-2">E-MAIL</th>
+                                                            <th className="pb-2">SITUAÇÃO</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr className="border-b border-zinc-700/10">
+                                                            <td className="py-3 font-bold">Rafael Campos Sampaio</td>
+                                                            <td className="py-3 text-gray-400">rafael.sampaio@exemplo.com</td>
+                                                            <td className="py-3"><span className="text-emerald-500 font-bold">Ativo</span></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </main>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+
+                    {/* MODAL GLASSMORPHIC DE CONFIRMAÇÃO DE COMPRA */}
+                    {showVoucherModal && pendingVoucher && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+                            <div className={`w-full max-w-sm p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
+                                <h3 className="font-black text-lg tracking-tight">Confirmar Troca</h3>
+                                <p className="text-xs text-gray-400 leading-relaxed">Deseja converter {pendingVoucher.cost} pontos em um código único de cupom para a recompensa "{pendingVoucher.name}"?</p>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button onClick={() => setShowVoucherModal(false)} className="p-2.5 bg-zinc-800 text-white font-bold text-xs rounded-xl cursor-pointer">Cancelar</button>
+                                    <button onClick={confirmVoucherRedemption} className="p-2.5 bg-emerald-500 text-black font-bold text-xs rounded-xl cursor-pointer shadow-lg shadow-emerald-500/10">Confirmar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        }
+
+        const root = document.getElementById('root');
+        ReactDOM.createRoot(root).render(<EcoCircuitApp />);
+    </script>
+</body>
+</html>
