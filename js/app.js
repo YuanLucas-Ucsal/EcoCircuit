@@ -19,6 +19,13 @@ function EcoCircuitApp() {
         { id: 1, name: '10% OFF - Ferreira Costa (Geral)', code: 'EC-7721-XYZ', expiry: '30/06/2026' }
     ]);
 
+    const [toast, setToast] = useState(null); 
+
+    const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
+
     useEffect(() => {
         document.body.className = theme === 'dark' 
             ? 'bg-[#0a0c10] text-gray-100' 
@@ -31,6 +38,7 @@ function EcoCircuitApp() {
         if (role === 'cidadao') setCidadaoScreen(screenId);
         if (role === 'empresa') setEmpresaScreen(screenId);
         if (role === 'admin') setAdminScreen(screenId);
+        showToast(`Estado injetado: ${role} -> ${screenId}`, 'info');
     };
 
     const runPhotoValidationTimer = () => {
@@ -38,14 +46,15 @@ function EcoCircuitApp() {
         setTimeout(() => {
             setUserPoints(prev => prev + 350);
             setCidadaoScreen('success');
+            showToast('Descarte processado com sucesso! +350 pontos na carteira.', 'success');
         }, 2200);
     };
 
     const triggerVoucherRedemptionFlow = (name, cost) => {
         if (userPoints < cost) {
-            alert('Margem de pontuação insuficiente para efetuar o resgate deste cupom.');
+            showToast('Margem de pontuação insuficiente para efetuar o resgate deste cupom.', 'error');
             return;
-                }
+        }
         setPendingVoucher({ name, cost });
         setShowVoucherModal(true);
     };
@@ -62,6 +71,7 @@ function EcoCircuitApp() {
         setPendingVoucher(null);
         setCidadaoScreen('carteira');
         setActiveWalletTab('my-coupons');
+        showToast('Cupom resgatado com sucesso! Verifique sua carteira.', 'success');
     };
 
     const cardClass = theme === 'dark' 
@@ -103,6 +113,7 @@ function EcoCircuitApp() {
                             setIsAuthenticated={setIsAuthenticated} 
                             cardClass={cardClass} 
                             inputClass={inputClass} 
+                            showToast={showToast}
                         />
                     )}
 
@@ -131,6 +142,7 @@ function EcoCircuitApp() {
                             cardClass={cardClass}
                             inputClass={inputClass}
                             globalLimits={globalLimits}
+                            showToast={showToast}
                         />
                     )}
 
@@ -143,6 +155,7 @@ function EcoCircuitApp() {
                             inputClass={inputClass}
                             globalLimits={globalLimits}
                             setGlobalLimits={setGlobalLimits}
+                            showToast={showToast}
                         />
                     )}
 
@@ -156,6 +169,26 @@ function EcoCircuitApp() {
                     confirmVoucherRedemption={confirmVoucherRedemption}
                     cardClass={cardClass}
                 />
+            )}
+
+
+            {toast && (
+                <div className="fixed bottom-5 right-5 z-[2000] view-transition flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border bg-[#0f1217] border-zinc-800 text-white min-w-[280px]">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${
+                        toast.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                        toast.type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                        'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    }`}>
+                        <i className={`fa-solid ${
+                            toast.type === 'success' ? 'fa-circle-check' :
+                            toast.type === 'error' ? 'fa-circle-exclamation' :
+                            'fa-circle-info'
+                        }`}></i>
+                    </div>
+                    <div className="flex-1 text-xs font-semibold leading-snug">
+                        {toast.message}
+                    </div>
+                </div>
             )}
         </div>
     );

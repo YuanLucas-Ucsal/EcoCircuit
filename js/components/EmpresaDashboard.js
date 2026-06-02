@@ -1,4 +1,38 @@
-function EmpresaDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass, globalLimits }) {
+function EmpresaDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass, globalLimits, showToast }) {
+    
+    const handleCreateCampaign = (e) => {
+        e.preventDefault();
+        
+        const formulario = new FormData(e.target);
+        const dadosCampanha = Object.fromEntries(formulario);
+        const pontos = parseInt(dadosCampanha.pontos_necessarios); 
+
+        if (pontos < globalLimits.min || pontos > globalLimits.max) { 
+            showToast(`Recusa de Regra (RN003): O valor inserido está fora das margens reguladas (${globalLimits.min} a ${globalLimits.max} pts).`, 'error'); 
+            return;
+        } 
+
+        fetch('http://localhost:8000/api/ofertas/criar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosCampanha)
+        })
+        .then(resposta => {
+            if (resposta.ok) {
+                showToast('Campanha publicada com sucesso e enviada para homologação!', 'success');
+                e.target.reset(); // Limpa os campos do formulário
+            } else {
+                showToast('Erro ao publicar a campanha no servidor.', 'error');
+            }
+        })
+        .catch(erro => {
+            console.error("Erro:", erro);
+            showToast('Erro de conexão com o servidor Python.', 'error');
+        });
+    };
+
     return (
         <div className="flex-1 flex view-transition">
             <aside className={`w-64 p-5 space-y-4 border-r ${sidebarClass}`}>
@@ -25,27 +59,27 @@ function EmpresaDashboard({ screen, setScreen, sidebarClass, cardClass, inputCla
                         <p className="text-xs text-gray-400 leading-relaxed">Sua conta corporativa foi submetida com sucesso. Os administradores da Codexa estão avaliando as diretrizes técnicas antes da publicação dos cupons virtuais.</p>
                     </div>
                 )}
+                
                 {screen === 'campaign' && (
                     <div className={`p-6 rounded-3xl border max-w-md space-y-4 ${cardClass}`}>
                         <h3 className="font-bold text-base tracking-tight">Criar Oferta de Desconto</h3>
-                        <div className="space-y-1">
-                            <label className="block text-[10px] uppercase font-bold text-gray-400">Nome da Oferta</label>
-                            <input type="text" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder="Ex: 25% OFF em Periféricos" id="emp-t" />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="block text-[10px] uppercase font-bold text-gray-400">Valor Exigido em Pontos</label>
-                            <input type="number" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder={`Margem autorizada: de ${globalLimits.min} a ${globalLimits.max}`} id="emp-p" />
-                        </div>
-                        <button onClick={() => { 
-                            const p = parseInt(document.getElementById('emp-p').value); 
-                            if(p < globalLimits.min || p > globalLimits.max) { 
-                                alert(`Recusa de Regra (RN003): O valor inserido está fora das margens reguladas (${globalLimits.min} a ${globalLimits.max} pts).`); 
-                            } else { 
-                                alert('Campanha publicada com sucesso!'); 
-                            } 
-                        }} className="w-full py-2.5 bg-blue-500 text-white font-bold text-xs rounded-xl cursor-pointer">Publicar Campanha</button>
+                        
+                        <form className="space-y-4" onSubmit={handleCreateCampaign}>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] uppercase font-bold text-gray-400">Nome da Oferta</label>
+                                <input required type="text" name="titulo_oferta" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder="Ex: 25% OFF em Periféricos" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="block text-[10px] uppercase font-bold text-gray-400">Valor Exigido em Pontos</label>
+                                <input required type="number" name="pontos_necessarios" className={`w-full p-2.5 text-xs rounded-xl ${inputClass}`} placeholder={`Margem autorizada: de ${globalLimits.min} a ${globalLimits.max}`} />
+                            </div>
+                            <button type="submit" className="w-full py-2.5 bg-blue-500 text-white font-bold text-xs rounded-xl cursor-pointer active:scale-95 transition-all shadow-md">
+                                Publicar Campanha
+                            </button>
+                        </form>
                     </div>
                 )}
+                
                 {screen === 'history' && (
                     <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
                         <h3 className="font-bold text-sm mb-4">Cupons Utilizados por Clientes</h3>

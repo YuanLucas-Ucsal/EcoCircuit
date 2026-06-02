@@ -1,4 +1,45 @@
-function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass, globalLimits, setGlobalLimits }) {
+function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass, globalLimits, setGlobalLimits, showToast }) {
+    
+    // 🆕 SALVAR PARÂMETROS GLOBAIS DE LIMITES NO BANCO
+    const handleSaveLimits = (e) => {
+        e.preventDefault();
+        
+        fetch('http://localhost:8000/api/admin/configuracao/limites', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(globalLimits)
+        })
+        .then(resposta => {
+            if (resposta.ok) {
+                showToast('Margens de pontuação globais salvas e atualizadas com sucesso!', 'success');
+            } else {
+                showToast('Erro ao persistir os novos limites no servidor.', 'error');
+            }
+        })
+        .catch(() => showToast('Erro de conexão com o servidor Python.', 'error'));
+    };
+
+    // 🆕 ALTERAR STATUS DE FILA DE PARCERIAS (US07)
+    const handlePartnerStatusUpdate = (idEmpresa, novoStatus) => {
+        fetch(`http://localhost:8000/api/admin/empresas/${idEmpresa}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: novoStatus }) // 'aprovada' ou 'rejeitada'
+        })
+        .then(resposta => {
+            if (resposta.ok) {
+                showToast(`Conta corporativa atualizada para o status: ${novoStatus.toUpperCase()}!`, 'success');
+            } else {
+                showToast('Erro ao atualizar homologação do parceiro.', 'error');
+            }
+        })
+        .catch(() => showToast('Erro de conexão HTTP.', 'error'));
+    };
+
     return (
         <div className="flex-1 flex view-transition">
             <aside className={`w-64 p-5 space-y-4 border-r ${sidebarClass}`}>
@@ -34,7 +75,7 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                     <div className={`p-6 rounded-3xl border space-y-4 ${cardClass}`}>
                         <div className="flex justify-between items-center flex-wrap gap-2">
                             <h3 className="font-extrabold text-base tracking-tight">Massa Total de Resíduos Coletados</h3>
-                            <button onClick={() => alert('Exportando relatório corporativo em PDF...')} className="bg-emerald-500 text-black px-4 py-2 rounded-xl text-xs font-bold shadow active:scale-95">Exportar Relatório (PDF)</button>
+                            <button onClick={() => showToast('Processando e exportando relatório consolidado em formato PDF...', 'info')} className="bg-emerald-500 text-black px-4 py-2 rounded-xl text-xs font-bold shadow active:scale-95">Exportar Relatório (PDF)</button>
                         </div>
                         <div className="h-36 flex items-end justify-around border-b border-zinc-700/20 pb-1">
                             <div className="w-12 bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-xl" style={{height: '45%'}} title="450 Kg"></div>
@@ -54,10 +95,12 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                             <h4 className="font-extrabold text-sm text-red-400">Contêiner #04 - Pituba Supermercado</h4>
                             <div className="w-full h-2 bg-zinc-800 rounded-full mt-3 overflow-hidden"><div className="h-full bg-red-500" style={{width: '100%'}}></div></div>
                             <span className="text-[10px] text-red-400 font-bold block mt-1">100% preenchido | PORTA BLOQUEADA</span>
-                            <button onClick={() => alert('Solicitação de esvaziamento enviada.')} className="w-full mt-3 py-2.5 bg-red-500 text-white font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg">Solicitar Esvaziamento</button>
+                            <button onClick={() => showToast('Logística acionada! Ordem de esvaziamento despachada.', 'success')} className="w-full mt-3 py-2.5 bg-red-500 text-white font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg">Solicitar Esvaziamento</button>
                         </div>
                     </div>
                 )}
+                
+                {/* FLUXO INTERATIVO DA FILA DE APRECIÇÃO DE PARCERIAS */}
                 {screen === 'partners' && (
                     <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
                         <h3 className="font-bold text-xs mb-3 uppercase tracking-wider text-zinc-400">Fila de Parcerias Pendentes</h3>
@@ -74,28 +117,36 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                                     <td className="py-3 font-bold">Bahia Eletro S.A.</td>
                                     <td className="py-3 font-mono">12.345.678/0001-99</td>
                                     <td className="py-3 space-x-2">
-                                        <button onClick={() => alert('Parceria aprovada.')} className="bg-emerald-500 text-black px-3 py-1 rounded text-xs font-bold cursor-pointer">Aprovar</button>
-                                        <button onClick={() => alert('Rejeitado')} className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold cursor-pointer">Rejeitar</button>
+                                        <button onClick={() => handlePartnerStatusUpdate(1, 'aprovada')} className="bg-emerald-500 text-black px-3 py-1 rounded text-xs font-bold cursor-pointer hover:bg-emerald-400 transition-all">Aprovar</button>
+                                        <button onClick={() => handlePartnerStatusUpdate(1, 'rejeitada')} className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold cursor-pointer hover:bg-red-400 transition-all">Rejeitar</button>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 )}
+                
+                {/* FORMULÁRIO DE PARÂMETROS CONFIGURÁVEIS COM SALVAMENTO HTTP REAL */}
                 {screen === 'config' && (
                     <div className={`p-6 rounded-3xl border max-w-sm space-y-4 ${cardClass}`}>
                         <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-400">Configurações Gerais</h3>
-                        <div className="space-y-1">
-                            <label className="block text-xs font-bold text-gray-400 uppercase">Limite Mínimo (Pontos)</label>
-                            <input type="number" value={globalLimits.min} onChange={(e) => setGlobalLimits(prev => ({...prev, min: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="block text-xs font-bold text-gray-400 uppercase">Limite Máximo (Pontos)</label>
-                            <input type="number" value={globalLimits.max} onChange={(e) => setGlobalLimits(prev => ({...prev, max: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
-                        </div>
-                        <button onClick={() => alert('Limites salvos')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs rounded-xl">Salvar Parâmetros</button>
+                        
+                        <form className="space-y-4" onSubmit={handleSaveLimits}>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Limite Mínimo (Pontos)</label>
+                                <input type="number" value={globalLimits.min} onChange={(e) => setGlobalLimits(prev => ({...prev, min: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Limite Máximo (Pontos)</label>
+                                <input type="number" value={globalLimits.max} onChange={(e) => setGlobalLimits(prev => ({...prev, max: parseInt(e.target.value) || 0}))} className={`w-full p-2 text-xs rounded-xl ${inputClass}`} />
+                            </div>
+                            <button type="submit" className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer">
+                                Salvar Parâmetros
+                            </button>
+                        </form>
                     </div>
                 )}
+                
                 {screen === 'citizens' && (
                     <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
                         <h3 className="font-bold text-sm mb-4">Cidadãos Ativos</h3>

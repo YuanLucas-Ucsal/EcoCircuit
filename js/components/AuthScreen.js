@@ -1,24 +1,53 @@
-function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClass, inputClass }) {
+function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClass, inputClass, showToast }) {
     const [authMode, setAuthMode] = React.useState('login'); 
 
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        if (authMode === 'login') {
-            setIsAuthenticated(true);
-        } else if (authMode === 'register') {
-            if (userRole === 'empresa') {
-                alert('Cadastro corporativo submetido! Conforme as diretrizes (US05), sua conta foi criada com o status "PENDENTE" e aguarda a aprovação de um Administrador da Codexa.');
-            } else if (userRole === 'admin') {
-                alert('Cadastro de Administrador Codexa realizado com sucesso utilizando a autenticação da Chave Mestre! Credenciais registradas no escopo global.');
+        // 1. Captura todos os campos do formulário automaticamente usando os atributos 'name'
+        const formulario = new FormData(e.target);
+        const dadosDigitados = Object.fromEntries(formulario);
+
+        // Define a URL com base no modo (Login, Cadastro ou Recuperação)
+        let url = 'http://localhost:8000/api/auth/login';
+        if (authMode === 'register') url = 'http://localhost:8000/api/auth/cadastro';
+        if (authMode === 'forgot') url = 'http://localhost:8000/api/auth/recuperar-senha';
+
+        // Envia os dados para o servidor Python de forma assíncrona
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ...dadosDigitados,
+                role: userRole // Envia também o perfil selecionado (cidadão, empresa ou admin)
+            })
+        })
+        .then(resposta => {
+            if (resposta.ok) {
+                if (authMode === 'login') {
+                    setIsAuthenticated(true);
+                    showToast('Login efetuado com sucesso!', 'success');
+                } else if (authMode === 'register') {
+                    if (userRole === 'empresa') {
+                        showToast('Cadastro submetido! Aguardando aprovação da Codexa.', 'success');
+                    } else {
+                        showToast('Cadastro realizado! Faça seu login.', 'success');
+                    }
+                    setAuthMode('login');
+                } else if (authMode === 'forgot') {
+                    showToast('Instruções de recuperação enviadas para o e-mail!', 'success');
+                    setAuthMode('login');
+                }
             } else {
-                alert('Cadastro de Cidadão realizado com sucesso! Você já pode realizar o seu login.');
+                showToast('Ocorreu um erro na requisição com o servidor.', 'error');
             }
-            setAuthMode('login');
-        } else if (authMode === 'forgot') {
-            alert('Instruções de recuperação de acesso enviadas com sucesso para o e-mail informado!');
-            setAuthMode('login');
-        }
+        })
+        .catch(erro => {
+            console.error("Erro na conexão HTTP:", erro);
+            showToast('Erro de conexão. O servidor Python está rodando?', 'error');
+        });
     };
 
     const getLeftPanelTitle = () => {
@@ -31,6 +60,7 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
         <div className="p-6 flex flex-col items-center justify-center min-h-full flex-1 view-transition">
             <div className={`w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-3xl overflow-hidden border shadow-2xl ${theme === 'dark' ? 'bg-[#11141c] border-zinc-800' : 'bg-white border-slate-200'}`}>
                 
+                {/* Painel Esquerdo */}
                 <div className="relative bg-gradient-to-br from-emerald-600 to-teal-800 p-8 text-white flex flex-col justify-between overflow-hidden min-h-[380px]">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
                     <div className="absolute bottom-[-10%] left-[-10%] w-44 h-44 rounded-full bg-white/10 blur-xl"></div>
@@ -52,9 +82,8 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                     <p className="text-[10px] text-emerald-200/50 relative z-10">Smart Code Solutions &copy; 2026</p>
                 </div>
 
-
+                {/* Painel Direito */}
                 <div className="p-8 flex flex-col justify-center space-y-6">
-                    
                     <div className="space-y-1">
                         <h3 className="text-xl font-extrabold tracking-tight view-transition">
                             {authMode === 'login' && 'Portal de Acesso Integrado'}
@@ -82,48 +111,53 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
 
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         
+                        {/* ADICIONADO: name="nome" */}
                         {authMode === 'register' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
                                     {userRole === 'empresa' ? 'Nome da Empresa' : userRole === 'admin' ? 'Identificação do Administrador' : 'Nome Completo'}
                                 </label>
                                 <div className="relative">
-                                    <input required type="text" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={userRole === 'empresa' ? 'Razão Social ou Nome Fantasia' : userRole === 'admin' ? 'Ex: Gestor de Operações Codexa' : 'Seu nome completo'} />
+                                    <input required type="text" name="nome" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={userRole === 'empresa' ? 'Razão Social ou Nome Fantasia' : userRole === 'admin' ? 'Ex: Gestor de Operações Codexa' : 'Seu nome completo'} />
                                     <i className={`fa-solid ${userRole === 'admin' ? 'fa-user-tie' : 'fa-user'} absolute left-3 top-3.5 text-gray-400 text-xs`}></i>
                                 </div>
                             </div>
                         )}
 
+                        {/* ADICIONADO: name="identificador" */}
                         <div className="space-y-1">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
                                 {userRole === 'empresa' && authMode !== 'forgot' ? 'CNPJ Corporativo' : userRole === 'admin' ? 'E-mail Corporativo (Codexa)' : 'Endereço de E-mail'}
                             </label>
                             <div className="relative">
-                                <input required type={(userRole === 'empresa' && authMode !== 'forgot') ? 'text' : 'email'} className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={(userRole === 'empresa' && authMode !== 'forgot') ? '00.000.000/0001-00' : userRole === 'admin' ? 'admin@codexa.com' : 'exemplo@diretriz.com'} />
+                                <input required type={(userRole === 'empresa' && authMode !== 'forgot') ? 'text' : 'email'} name="identificador" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={(userRole === 'empresa' && authMode !== 'forgot') ? '00.000.000/0001-00' : userRole === 'admin' ? 'admin@codexa.com' : 'exemplo@diretriz.com'} />
                                 <i className={`fa-solid ${(userRole === 'empresa' && authMode !== 'forgot') ? 'fa-id-card' : userRole === 'admin' ? 'fa-user-gear' : 'fa-envelope'} absolute left-3 top-3.5 text-gray-400 text-xs`}></i>
                             </div>
                         </div>
 
+                        {/* ADICIONADO: name="endereco" */}
                         {authMode === 'register' && userRole !== 'admin' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Endereço Residencial / Operacional</label>
                                 <div className="relative">
-                                    <input required type="text" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="Rua, Número, Bairro e Cidade" />
+                                    <input required type="text" name="endereco" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="Rua, Número, Bairro e Cidade" />
                                     <i className="fa-solid fa-map-marker-alt absolute left-3 top-3.5 text-gray-400 text-xs"></i>
                                 </div>
                             </div>
                         )}
 
+                        {/* ADICIONADO: name="chave_mestre" */}
                         {authMode === 'register' && userRole === 'admin' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Chave Mestre de Segurança (Token Codexa)</label>
                                 <div className="relative">
-                                    <input required type="password" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••••••" />
+                                    <input required type="password" name="chave_mestre" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••••••" />
                                     <i className="fa-solid fa-key absolute left-3 top-3.5 text-gray-400 text-xs"></i>
                                 </div>
                             </div>
                         )}
 
+                        {/* ADICIONADO: name="senha" */}
                         {authMode !== 'forgot' && (
                             <div className="space-y-1 view-transition">
                                 <div className="flex justify-between items-center">
@@ -135,17 +169,18 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                                     )}
                                 </div>
                                 <div className="relative">
-                                    <input required type="password" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
+                                    <input required type="password" name="senha" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
                                     <i className="fa-solid fa-lock absolute left-3 top-3.5 text-gray-400 text-xs"></i>
                                 </div>
                             </div>
                         )}
 
+                        {/* ADICIONADO: name="confirmar_senha" */}
                         {authMode === 'register' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Confirme sua Senha</label>
                                 <div className="relative">
-                                    <input required type="password" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
+                                    <input required type="password" name="confirmar_senha" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
                                     <i className="fa-solid fa-shield-halved absolute left-3 top-3.5 text-gray-400 text-xs"></i>
                                 </div>
                             </div>
@@ -158,6 +193,7 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                         </button>
                     </form>
 
+                    {/* Alternadores de Modo */}
                     <div className="text-center pt-2 border-t border-zinc-500/10">
                         {authMode === 'login' && (
                             <p className="text-xs text-gray-400 view-transition">

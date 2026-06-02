@@ -1,167 +1,210 @@
-function CidadaoDashboard({ 
-    screen, setScreen, userPoints, cardClass, inputClass, selectedContainer, 
-    setSelectedContainer, runPhotoValidationTimer, triggerVoucherRedemptionFlow, 
-    activeWalletTab, setActiveWalletTab, myCoupons 
-}) {
+function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClass, inputClass, showToast }) {
+    const [authMode, setAuthMode] = React.useState('login'); 
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        const formulario = new FormData(e.target);
+        const dadosDigitados = Object.fromEntries(formulario);
+
+        let url = 'http://localhost:8000/api/auth/login';
+        if (authMode === 'register') url = 'http://localhost:8000/api/auth/cadastro';
+        if (authMode === 'forgot') url = 'http://localhost:8000/api/auth/recuperar-senha';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ...dadosDigitados,
+                role: userRole 
+            })
+        })
+        .then(resposta => {
+            if (resposta.ok) {
+                if (authMode === 'login') {
+                    setIsAuthenticated(true);
+                    showToast('Login efetuado com sucesso!', 'success');
+                } else if (authMode === 'register') {
+                    if (userRole === 'empresa') {
+                        showToast('Cadastro submetido! Aguardando aprovação da Codexa.', 'success');
+                    } else {
+                        showToast('Cadastro realizado! Faça seu login.', 'success');
+                    }
+                    setAuthMode('login');
+                } else if (authMode === 'forgot') {
+                    showToast('Instruções de recuperação enviadas para o e-mail!', 'success');
+                    setAuthMode('login');
+                }
+            } else {
+                showToast('Ocorreu um erro na requisição com o servidor.', 'error');
+            }
+        })
+        .catch(erro => {
+            console.error("Erro na conexão HTTP:", erro);
+            showToast('Erro de conexão. Tente novamente mais tarde', 'error');
+        });
+    };
+
+    const getLeftPanelTitle = () => {
+        if (authMode === 'login') return 'Faça o Login em nossa Plataforma';
+        if (authMode === 'register') return 'Cadastre-se agora em nossa Plataforma';
+        return 'Recupere o seu Acesso';
+    };
+
     return (
-        <div className="flex-1 flex flex-col p-6 md:p-8 max-w-5xl w-full mx-auto space-y-6 view-transition">
-            <div className={`p-6 rounded-3xl border flex flex-wrap justify-between items-center gap-4 ${cardClass}`}>
-                <div className="space-y-0.5">
-                    <h2 className="text-xl font-black tracking-tight">Painel de Coleta e Prêmios</h2>
-                    <p className="text-xs text-gray-400">Gerenciamento reativo de descarte sustentável</p>
-                </div>
-                <div className="flex gap-3">
-                    <div className="bg-emerald-500/5 border border-emerald-500/10 px-4 py-2 rounded-2xl text-center shadow-inner">
-                        <span className="text-[9px] font-bold text-gray-400 block uppercase tracking-wider mb-0.5">Seu Saldo</span>
-                        <strong className="text-emerald-500 text-xl font-black">{userPoints} pts</strong>
+        <div className="p-6 flex flex-col items-center justify-center min-h-full flex-1 view-transition">
+            <div className={`w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-3xl overflow-hidden border shadow-2xl ${theme === 'dark' ? 'bg-[#11141c] border-zinc-800' : 'bg-white border-slate-200'}`}>
+                
+                <div className="relative bg-gradient-to-br from-emerald-600 to-teal-800 p-8 text-white flex flex-col justify-between overflow-hidden min-h-[380px]">
+                    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-44 h-44 rounded-full bg-white/10 blur-xl"></div>
+                    <div className="absolute top-[-5%] right-[-5%] w-36 h-36 rounded-3xl bg-emerald-400/20 rotate-12 blur-md"></div>
+                    
+                    <div className="flex items-center gap-2 font-bold text-base relative z-10">
+                        <i className="fa-solid fa-leaf text-white text-lg"></i>
+                        <span>EcoCircuit</span>
                     </div>
-                </div>
-            </div>
-
-            <nav className={`p-2 rounded-2xl border flex gap-1 items-center overflow-x-auto ${cardClass}`}>
-                <button onClick={() => setScreen('mapa')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${screen === 'mapa' ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}>
-                    <i className="fa-solid fa-map-location-dot text-sm"></i>
-                    <span>Mapa de Coleta</span>
-                </button>
-                <button onClick={() => setScreen('qr')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${['qr', 'category', 'photo', 'loading', 'success'].includes(screen) ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}>
-                    <i className="fa-solid fa-qrcode text-sm"></i>
-                    <span>Registrar Descarte</span>
-                </button>
-                <button onClick={() => setScreen('carteira')} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer active:scale-95 transition-all duration-200 ${screen === 'carteira' ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:bg-slate-500/5 dark:hover:bg-zinc-500/10 hover:text-emerald-400'}`}>
-                    <i className="fa-solid fa-wallet text-sm"></i>
-                    <span>Minha Carteira</span>
-                </button>
-            </nav>
-
-            {screen === 'mapa' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 view-transition">
-                    <div className="lg:col-span-2 h-80 rounded-3xl relative overflow-hidden bg-slate-900 border border-zinc-800 shadow-inner">
-                        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#10b981_1.5px,transparent_1.5px)] [background-size:20px_20px]"></div>
-                        <div onClick={() => setSelectedContainer({ name: 'Shopping Salvador', location: 'Av. Tancredo Neves, Piso L1', volume: 72, blocked: false })} className="absolute top-1/4 left-1/3 text-emerald-400 text-3xl cursor-pointer hover:scale-110 transition-all"><i className="fa-solid fa-location-dot"></i></div>
-                        <div onClick={() => setSelectedContainer({ name: 'Pituba Supermercado', location: 'Av. Manoel Dias da Silva', volume: 100, blocked: true })} className="absolute top-2/3 left-2/3 text-red-500 text-3xl cursor-pointer hover:scale-110 transition-all animate-pulse"><i className="fa-solid fa-triangle-exclamation"></i></div>
+                    
+                    <div className="space-y-2 relative z-10">
+                        <h2 className="text-3xl font-black tracking-tight leading-tight view-transition">
+                            {getLeftPanelTitle()}
+                        </h2>
+                        <p className="text-xs text-emerald-100/80 leading-relaxed">
+                            Conectando cidadãos a locais estratégicos de coleta de materiais eletrônicos de forma ágil, segura e gamificada.
+                        </p>
                     </div>
-                    <div>
-                        {selectedContainer ? (
-                            <div className={`p-5 rounded-3xl border space-y-3.5 h-full flex flex-col justify-between ${cardClass}`}>
-                                <div>
-                                    <h4 className="font-extrabold text-base tracking-tight">{selectedContainer.name}</h4>
-                                    <p className="text-xs text-gray-400 mt-0.5">{selectedContainer.location}</p>
-                                    <div className="mt-4">
-                                        <div className="flex justify-between text-xs font-bold mb-1">
-                                            <span>Capacidade Volumétrica</span>
-                                            <span className={selectedContainer.blocked ? 'text-red-400' : 'text-emerald-400'}>{selectedContainer.volume}%</span>
-                                        </div>
-                                        <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                            <div className={`h-full ${selectedContainer.blocked ? 'bg-red-500' : 'bg-emerald-400'}`} style={{width: `${selectedContainer.volume}%`}}></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {selectedContainer.blocked ? (
-                                    <div className="p-3 bg-red-500/10 border border-red-500/25 text-red-400 text-xs rounded-xl font-semibold leading-relaxed">
-                                        Dispositivo travado por segurança. A bacia física de armazenamento atingiu 100%.
-                                    </div>
-                                ) : (
-                                    <button onClick={() => setScreen('qr')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all">Ir para o Bocal</button>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="p-6 text-center border-2 border-dashed border-zinc-700/30 rounded-3xl text-gray-400 text-xs flex flex-col items-center justify-center h-full gap-2">
-                                <i className="fa-solid fa-hand-pointer text-lg text-emerald-500/20"></i>
-                                <span>Selecione um ponto de coleta física no mapa para carregar os dados de telemetria.</span>
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-[10px] text-emerald-200/50 relative z-10">Smart Code Solutions &copy; 2026</p>
                 </div>
-            )}
 
-            {screen === 'qr' && (
-                <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
-                    <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Leitor de QR Code Contêiner</h3>
-                    <div className="w-full h-44 bg-zinc-950 rounded-xl relative overflow-hidden flex items-center justify-center border border-zinc-800">
-                        <div className="absolute w-full h-0.5 bg-emerald-400 left-0 qr-laser-line shadow-[0_0_8px_#10b981]"></div>
-                        <i className="fa-solid fa-camera text-2xl text-zinc-800"></i>
-                    </div>
-                    <input type="text" placeholder="Código Alfanumérico Manual" className={`w-full p-2.5 text-xs text-center rounded-xl outline-none ${inputClass}`} />
-                    <button onClick={() => setScreen('category')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase rounded-xl cursor-pointer active:scale-95 transition-all">Acessar Painel</button>
-                </div>
-            )}
-
-            {screen === 'category' && (
-                <div className="space-y-4 text-center view-transition">
-                    <h3 className="text-lg font-bold tracking-tight">O que você vai descartar hoje?</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {['Pilhas e Baterias', 'Cabos e Fios', 'Celulares', 'Periféricos', 'TVs e Monitores', 'Computadores'].map((cat) => (
-                            <div key={cat} onClick={() => setScreen('photo')} className={`p-5 text-center rounded-2xl border cursor-pointer transform hover:-translate-y-0.5 transition-all hover:border-emerald-500 flex flex-col items-center justify-center gap-3 ${cardClass}`}>
-                                <i className="fa-solid fa-boxes-packing text-emerald-400 text-sm"></i>
-                                <span className="text-xs font-bold">{cat}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {screen === 'photo' && (
-                <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
-                    <h3 className="font-bold text-sm uppercase tracking-wider text-gray-400">Validação por Imagem</h3>
-                    <div onClick={runPhotoValidationTimer} className="w-full h-44 border-2 border-dashed border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-zinc-900/5 hover:border-emerald-500 transition-all">
-                        <i className="fa-solid fa-camera-retro text-xl text-emerald-400"></i>
-                        <span className="text-xs text-gray-400 font-bold">Simular Envio de Foto do Objeto</span>
-                    </div>
-                </div>
-            )}
-
-            {screen === 'loading' && (
-                <div className={`max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 ${cardClass}`}>
-                    <h4 className="font-bold text-emerald-400 animate-pulse text-xs uppercase tracking-widest">Aguarde, validando seu descarte junto ao contêiner...</h4>
-                    <div className="space-y-2.5">
-                        <div className="h-10 w-full skeleton-pulse-block rounded-xl"></div>
-                        <div className="h-4 w-3/4 skeleton-pulse-block rounded-xl mx-auto"></div>
-                        <div className="h-16 w-full skeleton-pulse-block rounded-xl"></div>
-                    </div>
-                </div>
-            )}
-
-            {screen === 'success' && (
-                <div className="max-w-md mx-auto w-full p-6 rounded-3xl border text-center space-y-4 border-emerald-500/20 bg-emerald-500/5 shadow-xl view-transition">
-                    <i className="fa-solid fa-circle-check text-4xl text-emerald-400"></i>
-                    <h3 className="text-lg font-black tracking-tight">Descarte Aprovado!</h3>
-                    <div className="py-2.5 bg-zinc-950/20 rounded-xl font-black text-2xl text-emerald-400">+ 350 pontos</div>
-                    <button onClick={() => setScreen('carteira')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase rounded-xl cursor-pointer">Acessar Carteira</button>
-                </div>
-            )}
-
-            {screen === 'carteira' && (
-                <div className="space-y-4 view-transition">
-                    <div className="flex gap-4 border-b border-zinc-800/10 pb-1.5">
-                        <button onClick={() => setActiveWalletTab('catalog')} className={`pb-1.5 text-xs font-bold transition-all cursor-pointer ${activeWalletTab === 'catalog' ? 'border-b-2 border-emerald-400 text-emerald-400' : 'text-gray-400'}`}>Cupons de Desconto</button>
-                        <button onClick={() => setActiveWalletTab('my-coupons')} className={`pb-1.5 text-xs font-bold transition-all cursor-pointer ${activeWalletTab === 'my-coupons' ? 'border-b-2 border-emerald-400 text-emerald-400' : 'text-gray-400'}`}>Meus Cupons ({myCoupons.length})</button>
+                <div className="p-8 flex flex-col justify-center space-y-6">
+                    <div className="space-y-1">
+                        <h3 className="text-xl font-extrabold tracking-tight view-transition">
+                            {authMode === 'login' && 'Portal de Acesso Integrado'}
+                            {authMode === 'register' && 'Crie sua Conta Virtual'}
+                            {authMode === 'forgot' && 'Recuperação de Credenciais'}
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                            {authMode === 'forgot' 
+                                ? 'Insira o endereço eletrônico registrado para receber o token de redefinição de senha.' 
+                                : 'Selecione seu escopo profissional abaixo para carregar os campos correspondentes de forma dinâmica.'}
+                        </p>
                     </div>
 
-                    {activeWalletTab === 'catalog' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className={`p-4 rounded-2xl border flex justify-between items-center ${cardClass}`}>
-                                <div>
-                                    <h4 className="font-bold text-xs">Cupom 20% OFF - Lojas Parceiras Tech</h4>
-                                    <p className="text-[11px] text-emerald-400 font-bold mt-0.5">Custo: 1200 pontos</p>
-                                </div>
-                                <button onClick={() => triggerVoucherRedemptionFlow('20% OFF Lojas Parceiras', 1200)} className="bg-emerald-500 text-black px-3 py-1.5 rounded-lg font-bold text-xs cursor-pointer active:scale-95 transition-all shadow">Resgatar</button>
-                            </div>
+                    {authMode !== 'forgot' ? (
+                        <div className="grid grid-cols-3 gap-1 bg-zinc-500/10 p-1 rounded-xl border border-zinc-700/5 view-transition">
+                            <button type="button" onClick={() => setUserRole('cidadao')} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'cidadao' ? 'bg-emerald-500 text-black shadow' : 'text-gray-400'}`}>Cidadão</button>
+                            <button type="button" onClick={() => setUserRole('empresa')} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'empresa' ? 'bg-blue-500 text-white shadow' : 'text-gray-400'}`}>Empresa</button>
+                            <button type="button" onClick={() => setUserRole('admin')} className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${userRole === 'admin' ? 'bg-purple-500 text-white shadow' : 'text-gray-400'}`}>Admin</button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {myCoupons.map(c => (
-                                <div key={c.id} className={`p-4 rounded-2xl border border-l-4 border-l-emerald-400 flex justify-between items-center ${cardClass}`}>
-                                    <div className="space-y-1">
-                                        <h4 className="font-bold text-xs text-zinc-400">{c.name}</h4>
-                                        <p className="text-[11px] font-mono text-gray-400">HASH: <span className="bg-zinc-800 text-white px-2 py-0.5 rounded font-bold">{c.code}</span></p>
-                                        <p className="text-[10px] text-amber-500 font-medium">Expira: {c.expiry}</p>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="text-xs text-emerald-500 font-bold bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl w-fit view-transition uppercase tracking-wider text-[10px]">
+                            <i className="fa-solid fa-user-shield mr-1.5"></i> Perfil: {userRole}
                         </div>
                     )}
+
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        
+                        {authMode === 'register' && (
+                            <div className="space-y-1 view-transition">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                    {userRole === 'empresa' ? 'Nome da Empresa' : userRole === 'admin' ? 'Identificação do Administrador' : 'Nome Completo'}
+                                </label>
+                                <div className="relative">
+                                    <input required type="text" name="nome" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={userRole === 'empresa' ? 'Razão Social ou Nome Fantasia' : userRole === 'admin' ? 'Ex: Gestor de Operações Codexa' : 'Seu nome completo'} />
+                                    <i className={`fa-solid ${userRole === 'admin' ? 'fa-user-tie' : 'fa-user'} absolute left-3 top-3.5 text-gray-400 text-xs`}></i>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                                {userRole === 'empresa' && authMode !== 'forgot' ? 'CNPJ Corporativo' : userRole === 'admin' ? 'E-mail Corporativo (Codexa)' : 'Endereço de E-mail'}
+                            </label>
+                            <div className="relative">
+                                <input required type={(userRole === 'empresa' && authMode !== 'forgot') ? 'text' : 'email'} name="identificador" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder={(userRole === 'empresa' && authMode !== 'forgot') ? '00.000.000/0001-00' : userRole === 'admin' ? 'admin@codexa.com' : 'exemplo@diretriz.com'} />
+                                <i className={`fa-solid ${(userRole === 'empresa' && authMode !== 'forgot') ? 'fa-id-card' : userRole === 'admin' ? 'fa-user-gear' : 'fa-envelope'} absolute left-3 top-3.5 text-gray-400 text-xs`}></i>
+                            </div>
+                        </div>
+
+                        {authMode === 'register' && userRole !== 'admin' && (
+                            <div className="space-y-1 view-transition">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Endereço Residencial / Operacional</label>
+                                <div className="relative">
+                                    <input required type="text" name="endereco" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="Rua, Número, Bairro e Cidade" />
+                                    <i className="fa-solid fa-map-marker-alt absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        )}
+
+                        {authMode === 'register' && userRole === 'admin' && (
+                            <div className="space-y-1 view-transition">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Chave Mestre de Segurança (Token Codexa)</label>
+                                <div className="relative">
+                                    <input required type="password" name="chave_mestre" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••••••" />
+                                    <i className="fa-solid fa-key absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        )}
+
+                        {authMode !== 'forgot' && (
+                            <div className="space-y-1 view-transition">
+                                <div className="flex justify-between items-center">
+                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Senha de Acesso</label>
+                                    {authMode === 'login' && (
+                                        <button type="button" onClick={() => setAuthMode('forgot')} className="text-[10px] text-emerald-500 font-semibold hover:underline bg-transparent border-none cursor-pointer">
+                                            Esqueceu a senha?
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <input required type="password" name="senha" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
+                                    <i className="fa-solid fa-lock absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        )}
+
+                        {authMode === 'register' && (
+                            <div className="space-y-1 view-transition">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Confirme sua Senha</label>
+                                <div className="relative">
+                                    <input required type="password" name="confirmar_senha" className={`w-full p-3 pl-9 text-xs rounded-xl border outline-none ${inputClass}`} placeholder="••••••••" />
+                                    <i className="fa-solid fa-shield-halved absolute left-3 top-3.5 text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        )}
+
+                        <button type="submit" className="w-full p-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer">
+                            {authMode === 'login' && 'LOGIN'}
+                            {authMode === 'register' && 'Finalizar Meu Cadastro'}
+                            {authMode === 'forgot' && 'Disparar Token de Recuperação'}
+                        </button>
+                    </form>
+
+                    <div className="text-center pt-2 border-t border-zinc-500/10">
+                        {authMode === 'login' && (
+                            <p className="text-xs text-gray-400 view-transition">
+                                Não possui uma credencial ativa?{' '}
+                                <button type="button" onClick={() => setAuthMode('register')} className="text-emerald-500 font-bold hover:underline bg-transparent border-none cursor-pointer">Crie uma conta</button>
+                            </p>
+                        )}
+                        {authMode === 'register' && (
+                            <p className="text-xs text-gray-400 view-transition">
+                                Já possui cadastro no ecossistema?{' '}
+                                <button type="button" onClick={() => setAuthMode('login')} className="text-emerald-500 font-bold hover:underline bg-transparent border-none cursor-pointer">Faça seu login</button>
+                            </p>
+                        )}
+                        {authMode === 'forgot' && (
+                            <p className="text-xs text-gray-400 view-transition">
+                                Lembrou seus dados de acesso?{' '}
+                                <button type="button" onClick={() => setAuthMode('login')} className="text-emerald-500 font-bold hover:underline bg-transparent border-none cursor-pointer">Voltar para o Login</button>
+                            </p>
+                        )}
+                    </div>
+
                 </div>
-            )}
+            </div>
         </div>
     );
 }
