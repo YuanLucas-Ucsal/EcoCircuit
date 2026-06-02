@@ -1,6 +1,5 @@
 function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass, globalLimits, setGlobalLimits, showToast }) {
     
-    // 🆕 SALVAR PARÂMETROS GLOBAIS DE LIMITES NO BANCO
     const handleSaveLimits = (e) => {
         e.preventDefault();
         

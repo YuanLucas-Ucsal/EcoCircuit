@@ -4,16 +4,13 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // 1. Captura todos os campos do formulário automaticamente usando os atributos 'name'
         const formulario = new FormData(e.target);
         const dadosDigitados = Object.fromEntries(formulario);
 
-        // Define a URL com base no modo (Login, Cadastro ou Recuperação)
         let url = 'http://localhost:8000/api/auth/login';
         if (authMode === 'register') url = 'http://localhost:8000/api/auth/cadastro';
         if (authMode === 'forgot') url = 'http://localhost:8000/api/auth/recuperar-senha';
 
-        // Envia os dados para o servidor Python de forma assíncrona
         fetch(url, {
             method: 'POST',
             headers: {
@@ -21,7 +18,7 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
             },
             body: JSON.stringify({
                 ...dadosDigitados,
-                role: userRole // Envia também o perfil selecionado (cidadão, empresa ou admin)
+                role: userRole 
             })
         })
         .then(resposta => {
@@ -81,7 +78,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                     <p className="text-[10px] text-emerald-200/50 relative z-10">Smart Code Solutions &copy; 2026</p>
                 </div>
 
-                {/* Painel Direito */}
                 <div className="p-8 flex flex-col justify-center space-y-6">
                     <div className="space-y-1">
                         <h3 className="text-xl font-extrabold tracking-tight view-transition">
