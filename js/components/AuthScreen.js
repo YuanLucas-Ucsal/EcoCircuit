@@ -60,7 +60,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
         <div className="p-6 flex flex-col items-center justify-center min-h-full flex-1 view-transition">
             <div className={`w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-3xl overflow-hidden border shadow-2xl ${theme === 'dark' ? 'bg-[#11141c] border-zinc-800' : 'bg-white border-slate-200'}`}>
                 
-                {/* Painel Esquerdo */}
                 <div className="relative bg-gradient-to-br from-emerald-600 to-teal-800 p-8 text-white flex flex-col justify-between overflow-hidden min-h-[380px]">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
                     <div className="absolute bottom-[-10%] left-[-10%] w-44 h-44 rounded-full bg-white/10 blur-xl"></div>
@@ -110,8 +109,7 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                     )}
 
                     <form className="space-y-4" onSubmit={handleSubmit}>
-                        
-                        {/* ADICIONADO: name="nome" */}
+
                         {authMode === 'register' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
@@ -124,7 +122,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                             </div>
                         )}
 
-                        {/* ADICIONADO: name="identificador" */}
                         <div className="space-y-1">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
                                 {userRole === 'empresa' && authMode !== 'forgot' ? 'CNPJ Corporativo' : userRole === 'admin' ? 'E-mail Corporativo (Codexa)' : 'Endereço de E-mail'}
@@ -135,7 +132,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                             </div>
                         </div>
 
-                        {/* ADICIONADO: name="endereco" */}
                         {authMode === 'register' && userRole !== 'admin' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Endereço Residencial / Operacional</label>
@@ -146,7 +142,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                             </div>
                         )}
 
-                        {/* ADICIONADO: name="chave_mestre" */}
                         {authMode === 'register' && userRole === 'admin' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Chave Mestre de Segurança (Token Codexa)</label>
@@ -157,7 +152,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                             </div>
                         )}
 
-                        {/* ADICIONADO: name="senha" */}
                         {authMode !== 'forgot' && (
                             <div className="space-y-1 view-transition">
                                 <div className="flex justify-between items-center">
@@ -175,7 +169,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                             </div>
                         )}
 
-                        {/* ADICIONADO: name="confirmar_senha" */}
                         {authMode === 'register' && (
                             <div className="space-y-1 view-transition">
                                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">Confirme sua Senha</label>
@@ -193,7 +186,6 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                         </button>
                     </form>
 
-                    {/* Alternadores de Modo */}
                     <div className="text-center pt-2 border-t border-zinc-500/10">
                         {authMode === 'login' && (
                             <p className="text-xs text-gray-400 view-transition">

@@ -22,7 +22,7 @@ function EmpresaDashboard({ screen, setScreen, sidebarClass, cardClass, inputCla
         .then(resposta => {
             if (resposta.ok) {
                 showToast('Campanha publicada com sucesso e enviada para homologação!', 'success');
-                e.target.reset(); // Limpa os campos do formulário
+                e.target.reset();
             } else {
                 showToast('Erro ao publicar a campanha no servidor.', 'error');
             }

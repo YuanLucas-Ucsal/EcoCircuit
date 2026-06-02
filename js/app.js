@@ -18,7 +18,6 @@ function EcoCircuitApp() {
         { id: 1, name: '10% OFF - Ferreira Costa (Geral)', code: 'EC-7721-XYZ', expiry: '30/06/2026' }
     ]);
 
-    // Sistema de Notificações Reativo (Toasts)
     const [toast, setToast] = useState(null); 
 
     const showToast = (message, type = 'info') => {
@@ -65,7 +64,6 @@ function EcoCircuitApp() {
         showToast('Cupom resgatado com sucesso! Verifique sua carteira.', 'success');
     };
 
-    // Tokens de Estilização Dinâmica (Tailwind Contrast Match)
     const cardClass = theme === 'dark' 
         ? 'bg-[#151923] border-zinc-800 text-white shadow-[0_20px_40px_rgba(0,0,0,0.5)]' 
         : 'bg-white border-slate-200 text-slate-900 shadow-[0_15px_35px_rgba(148,163,184,0.1)]';
@@ -78,13 +76,11 @@ function EcoCircuitApp() {
 
     return (
         <div className="min-h-screen flex flex-col relative z-10 flex-1">
-            {/* Formas Geométricas de Background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-8%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-400/5 blur-3xl"></div>
                 <div className="absolute bottom-[-12%] right-[-5%] w-[45vw] h-[45vw] rounded-full bg-gradient-to-tr from-emerald-500/10 to-emerald-300/5 blur-3xl"></div>
             </div>
 
-            {/* Topo Fixo com Componente Header Limpo */}
             <div className="sticky top-0 z-50 w-full flex flex-col">
                 <Header 
                     theme={theme} 
@@ -93,7 +89,6 @@ function EcoCircuitApp() {
                 />
             </div>
 
-            {/* Corpo Principal e Roteador SPA */}
             <div className="flex-1 flex flex-col relative z-10">
                 <div className="flex-1 flex flex-col md:flex-row">
                     
@@ -163,7 +158,6 @@ function EcoCircuitApp() {
                 />
             )}
 
-            {/* Notificação Flutuante Adaptável ao Tema Claro/Escuro */}
             {toast && (
                 <div className={`fixed bottom-5 right-5 z-[2000] view-transition flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border min-w-[280px] transition-colors duration-300 ${
                     theme === 'dark' 

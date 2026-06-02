@@ -18,17 +18,17 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                 showToast('Erro ao persistir os novos limites no servidor.', 'error');
             }
         })
-        .catch(() => showToast('Erro de conexão com o servidor Python.', 'error'));
+        .catch(() => showToast('Erro de conexão com o servidor, tente novamente mais tarde.', 'error'));
     };
 
-    // 🆕 ALTERAR STATUS DE FILA DE PARCERIAS (US07)
+    
     const handlePartnerStatusUpdate = (idEmpresa, novoStatus) => {
         fetch(`http://localhost:8000/api/admin/empresas/${idEmpresa}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ status: novoStatus }) // 'aprovada' ou 'rejeitada'
+            body: JSON.stringify({ status: novoStatus })
         })
         .then(resposta => {
             if (resposta.ok) {
@@ -100,7 +100,6 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                     </div>
                 )}
                 
-                {/* FLUXO INTERATIVO DA FILA DE APRECIÇÃO DE PARCERIAS */}
                 {screen === 'partners' && (
                     <div className={`p-5 rounded-3xl border overflow-hidden ${cardClass}`}>
                         <h3 className="font-bold text-xs mb-3 uppercase tracking-wider text-zinc-400">Fila de Parcerias Pendentes</h3>
@@ -126,7 +125,6 @@ function AdminDashboard({ screen, setScreen, sidebarClass, cardClass, inputClass
                     </div>
                 )}
                 
-                {/* FORMULÁRIO DE PARÂMETROS CONFIGURÁVEIS COM SALVAMENTO HTTP REAL */}
                 {screen === 'config' && (
                     <div className={`p-6 rounded-3xl border max-w-sm space-y-4 ${cardClass}`}>
                         <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-400">Configurações Gerais</h3>
