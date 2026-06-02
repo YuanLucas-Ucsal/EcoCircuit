@@ -176,7 +176,7 @@ function AuthScreen({ theme, userRole, setUserRole, setIsAuthenticated, cardClas
                         )}
 
                         <button type="submit" className="w-full p-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer">
-                            {authMode === 'login' && 'Entrar na SPA'}
+                            {authMode === 'login' && 'LOGIN'}
                             {authMode === 'register' && 'Finalizar Meu Cadastro'}
                             {authMode === 'forgot' && 'Disparar Token de Recuperação'}
                         </button>

@@ -108,7 +108,7 @@ function CidadaoDashboard({
                                         Dispositivo travado por segurança. A bacia física de armazenamento atingiu 100%.
                                     </div>
                                 ) : (
-                                    <button onClick={() => setScreen('qr')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all">Ir para o Bocal</button>
+                                    <button onClick={() => setScreen('qr')} className="w-full py-2.5 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer active:scale-95 transition-all">Ir para o Local</button>
                                 )}
                             </div>
                         ) : (
