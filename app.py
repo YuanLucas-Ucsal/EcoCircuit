@@ -1,25 +1,23 @@
-from flask import render_template, Flask, request, session, redirect, url_for, current_app, flash, jsonify 
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user 
-from flask_migrate import Migrate 
-from werkzeug.security import generate_password_hash, check_password_hash 
+from flask import render_template, Flask, request, session, redirect, url_for, current_app, flash, jsonify
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_migrate import Migrate
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix  # ✅ import aqui
 from flask_cors import CORS
-
-from db import db  
+from db import db
 import uuid
 from model import Cidadao, Empresa, Admin, Localizacao, Oferta, RegistroMassa, Voucher
 from datetime import datetime, timedelta
+import os
+from dotenv import load_dotenv
 
-import os 
-from dotenv import load_dotenv 
+load_dotenv()
 
-load_dotenv() 
+app = Flask(__name__)                                        # ✅ criado UMA vez
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # ✅ logo após
+app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24))
 
-app = Flask(__name__) 
-app.secret_key = os.environ.get("SECRET_KEY", os.urandom(24)) 
-
-# Ativa o CORS para permitir que o seu front-end acesse as APIs da porta 8000
-CORS(app)
-
+CORS(app)  
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///teste.db") 
 if DATABASE_URL.startswith("postgres://"): 
@@ -91,9 +89,6 @@ def api_login():
                 "status": "erro", 
                 "mensagem": "Acesso negado. Sua conta corporativa ainda aguarda aprovação de um Administrador Codexa."
             }), 403 
-        
-        usuario.id_sessao = f"{role}_{usuario.id}"
-        usuario.get_id = lambda: f"{role}_{usuario.id}"
         
         login_user(usuario, remember=True) 
         
