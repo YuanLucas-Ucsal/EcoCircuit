@@ -72,9 +72,13 @@ function EmpresaDashboard({ screen, setScreen, sidebarClass, cardClass, inputCla
             </aside>
             <main className="flex-1 p-8 space-y-5">
                 {screen === 'status' && (
-                    <div className="p-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 space-y-2 shadow-xl">
-                        <h2 className="text-sm font-bold text-amber-500"><i className="fa-solid fa-hourglass-half mr-1.5"></i>Status Cadastral: PENDENTE DE APROVAÇÃO</h2>
-                        <p className="text-xs text-gray-400 leading-relaxed">Sua conta corporativa foi submetida com sucesso. Os administradores da Codexa estão avaliando as diretrizes técnicas antes da publicação dos cupons virtuais.</p>
+                    <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-2 shadow-xl">
+                      <h2 className="text-sm font-bold text-emerald-600">
+                        <i className="fa-solid fa-hourglass-half mr-1.5"></i>Status Cadastral: APROVADO
+                      </h2>
+                      <p className="text-xs text-gray-400 leading-relaxed">
+                        Sua conta corporativa foi submetida com sucesso. Os administradores da Codexa verificaram as diretrizes técnicas antes da publicação dos cupons virtuais. Parabéns!
+                      </p>
                     </div>
                 )}
                 
